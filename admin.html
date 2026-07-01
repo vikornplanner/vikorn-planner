@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — vikorn.planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: {
+                navy: { 50:'#f0f4ff',100:'#e0e9ff',200:'#c7d7fe',600:'#2563eb',700:'#1d4ed8',800:'#1e3a8a',900:'#172554' },
+                gold: { 50:'#fefce8',100:'#fef9c3',400:'#d4af37',500:'#c9a227',600:'#b8901c' }
+            }}}
+        }
+    </script>
+    <style>
+        body { background:#fafaf9; }
+        .fade-in { animation:fadeIn .3s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .section-card { background:#fff; border:1px solid #e7e5e4; border-radius:16px; overflow:hidden; margin-bottom:16px; }
+        .section-header { display:flex; align-items:center; gap:12px; padding:14px 20px; background:#f9fafb; border-bottom:1px solid #e7e5e4; cursor:pointer; user-select:none; }
+        .section-header:hover { background:#f3f4f6; }
+        .section-toggle { width:44px; height:24px; border-radius:12px; position:relative; transition:.2s; flex-shrink:0; cursor:pointer; border:none; }
+        .section-toggle.on  { background:#172554; }
+        .section-toggle.off { background:#d1d5db; }
+        .section-toggle::after { content:''; position:absolute; top:3px; width:18px; height:18px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+        .section-toggle.on::after  { left:23px; }
+        .section-toggle.off::after { left:3px; }
+        .section-body { padding:20px; display:block; }
+        .section-body.hidden { display:none; }
+        textarea, input[type=text], input[type=number], input[type=date] {
+            width:100%; padding:10px 14px; border:1px solid #d1d5db; border-radius:10px;
+            font-size:14px; color:#292524; outline:none; transition:.15s;
+            background:#fff; font-family:inherit;
+        }
+        textarea:focus, input:focus { border-color:#d4af37; box-shadow:0 0 0 3px rgba(212,175,55,.15); }
+        textarea { resize:vertical; line-height:1.7; }
+        label.field-label { display:block; font-size:13px; font-weight:600; color:#44403c; margin-bottom:6px; }
+        .list-item-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+        .list-item-row input { flex:1; }
+        .btn-remove { background:#fee2e2; color:#dc2626; border:none; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; flex-shrink:0; }
+        .btn-add { background:#f0f4ff; color:#1e3a8a; border:1px dashed #a5b4fc; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; margin-top:4px; }
+        .btn-add:hover { background:#e0e9ff; }
+        .img-drop { border:2px dashed #d1d5db; border-radius:12px; padding:32px; text-align:center; cursor:pointer; transition:.2s; }
+        .img-drop:hover { border-color:#d4af37; background:#fefce8; }
+        .img-drop.has-img { border-style:solid; border-color:#d4af37; padding:0; }
+        .img-drop img { width:100%; border-radius:10px; display:block; max-height:200px; object-fit:cover; }
+        .chip { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; margin:2px; }
+        .chip-ภาษี    { background:#dbeafe; color:#1e3a8a; }
+        .chip-เกษียณ  { background:#fef3c7; color:#92400e; }
+        .chip-ลงทุน   { background:#d1fae5; color:#065f46; }
+        .chip-การเงิน { background:#dbeafe; color:#1e40af; }
+        .chip-ประกัน  { background:#ede9fe; color:#5b21b6; }
+        .tab-btn { padding:8px 16px; font-size:13px; font-weight:600; border-bottom:3px solid transparent; color:#78716c; cursor:pointer; }
+        .tab-btn.active { border-color:#d4af37; color:#b8901c; }
+        /* Preview styles */
+        .preview-body h2 { font-size:1.4rem; font-weight:700; color:#172554; margin:1.5rem 0 .75rem; }
+        .preview-body h3 { font-size:1.1rem; font-weight:700; color:#1e3a8a; margin:1.2rem 0 .5rem; }
+        .preview-body p  { color:#44403c; line-height:1.8; margin-bottom:.75rem; }
+        .preview-body ul { list-style:disc; padding-left:1.5rem; margin-bottom:.75rem; }
+        .preview-body ol { list-style:decimal; padding-left:1.5rem; margin-bottom:.75rem; }
+        .preview-body li { color:#44403c; line-height:1.8; margin-bottom:.25rem; }
+        .preview-body .box-blue { background:#eff6ff; border-left:4px solid #1e3a8a; padding:16px 20px; border-radius:0 10px 10px 0; margin:16px 0; }
+        .preview-body .box-gold { background:#fffbeb; border-left:4px solid #d4af37; padding:16px 20px; border-radius:0 10px 10px 0; margin:16px 0; }
+        .preview-body .box-warn { background:#fef2f2; border-left:4px solid #dc2626; padding:16px 20px; border-radius:0 10px 10px 0; margin:16px 0; }
+        .preview-body .note     { font-size:.8rem; color:#a8a29e; font-style:italic; margin-top:2rem; padding-top:1rem; border-top:1px solid #e7e5e4; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- LOGIN -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy-900 to-navy-800 px-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-10 fade-in">
+        <div class="flex items-center gap-3 justify-center mb-8">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden" style="background:#172554;border:1.5px solid #d4af37;">
+                <img src="icon2.png" alt="logo" class="w-full h-full object-contain p-1" onerror="this.parentElement.innerHTML='<span style=color:#d4af37;font-weight:900;font-size:18px>v</span>'">
+            </div>
+            <span class="font-bold text-xl text-navy-900">vikorn.<span class="text-gold-600">planner</span></span>
+        </div>
+        <h2 class="text-center font-bold text-xl text-navy-900 mb-6">Admin Panel</h2>
+        <div id="loginError" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-5 text-center">รหัสผ่านไม่ถูกต้อง</div>
+        <form onsubmit="doLogin(event)">
+            <label class="field-label mb-1">รหัสผ่าน</label>
+            <input id="pwInput" type="password" placeholder="••••••••"
+                style="margin-bottom:20px">
+            <button type="submit" class="w-full bg-navy-800 text-gold-400 font-bold py-3 rounded-xl hover:bg-navy-900 transition shadow">เข้าสู่ระบบ</button>
+        </form>
+    </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="adminApp" class="hidden min-h-screen">
+    <header class="bg-navy-900 text-white px-6 py-3 flex items-center justify-between shadow-lg sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden" style="background:#172554;border:1.5px solid #d4af37;">
+                <img src="icon2.png" alt="logo" class="w-full h-full object-contain p-0.5" onerror="this.parentElement.innerHTML='<span style=color:#d4af37;font-weight:900>v</span>'">
+            </div>
+            <span class="font-bold">vikorn.<span class="text-gold-400">planner</span> — Admin</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="vikorn_planner_official_website (1).html" target="_blank" class="text-xs text-navy-300 hover:text-gold-400 transition">🔗 ดูเว็บไซต์</a>
+            <button onclick="doLogout()" class="text-xs bg-navy-700 hover:bg-navy-600 px-4 py-1.5 rounded-full transition">ออกจากระบบ</button>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto px-4 py-10">
+
+        <!-- DASHBOARD -->
+        <div id="dashboardView" class="fade-in">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-2xl font-bold text-navy-900">จัดการบทความ</h1>
+                    <p class="text-stone-500 text-sm mt-1">บทความที่เพิ่มจะปรากฏใน "คลังความรู้" บนเว็บไซต์</p>
+                </div>
+                <button onclick="showForm()" class="bg-navy-800 text-gold-400 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-navy-900 transition shadow">+ เพิ่มบทความใหม่</button>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm text-center">
+                    <div class="text-3xl font-bold text-navy-900" id="statTotal">0</div>
+                    <div class="text-xs text-stone-500 mt-1">บทความทั้งหมด</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm text-center">
+                    <div class="text-3xl font-bold text-gold-600" id="statCats">0</div>
+                    <div class="text-xs text-stone-500 mt-1">หมวดหมู่ที่ใช้</div>
+                </div>
+                <div class="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm text-center">
+                    <div class="text-3xl font-bold text-emerald-600" id="statLatest">—</div>
+                    <div class="text-xs text-stone-500 mt-1">บทความล่าสุด</div>
+                </div>
+            </div>
+            <div id="articleListEl"></div>
+            <div id="emptyState" class="hidden text-center py-20 text-stone-400">
+                <div class="text-5xl mb-4">📝</div>
+                <p class="text-lg font-medium">ยังไม่มีบทความ</p>
+                <p class="text-sm mt-1">กด "+ เพิ่มบทความใหม่" เพื่อเริ่มต้น</p>
+            </div>
+        </div>
+
+        <!-- FORM -->
+        <div id="formView" class="hidden fade-in">
+            <button onclick="showDashboard()" class="text-navy-600 hover:text-gold-600 font-medium text-sm flex items-center gap-1 mb-6 transition">← กลับรายการบทความ</button>
+            <h1 id="formTitle" class="text-2xl font-bold text-navy-900 mb-6">เพิ่มบทความใหม่</h1>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-stone-200 mb-8 gap-2">
+                <div class="tab-btn active" onclick="switchTab('edit')" id="tabEditBtn">✏️ แก้ไข</div>
+                <div class="tab-btn" onclick="switchTab('preview')" id="tabPreviewBtn">👁️ ตัวอย่าง</div>
+            </div>
+
+            <!-- EDIT TAB -->
+            <div id="tabEditContent">
+
+                <!-- ── ข้อมูลพื้นฐาน ── -->
+                <div class="section-card">
+                    <div class="section-header" style="cursor:default">
+                        <span style="font-size:18px">📋</span>
+                        <span class="font-bold text-navy-900">ข้อมูลพื้นฐาน</span>
+                        <span class="text-red-500 text-sm ml-1">*</span>
+                    </div>
+                    <div class="section-body">
+                        <input type="hidden" id="editId">
+
+                        <!-- Image Upload -->
+                        <div style="margin-bottom:12px">
+                            <label class="field-label">รูปภาพบทความ <span class="text-stone-400 font-normal">(แสดงในหน้า card เสมอ — และหน้าบทความเมื่อไม่มี YouTube)</span></label>
+                            <div id="imgDrop" class="img-drop" onclick="document.getElementById('imgFileInput').click()">
+                                <div id="imgPlaceholder">
+                                    <div style="font-size:36px;margin-bottom:8px">🖼️</div>
+                                    <p style="color:#78716c;font-size:14px;font-weight:600">คลิกเพื่อเลือกรูปภาพ</p>
+                                    <p style="color:#a8a29e;font-size:12px;margin-top:4px">JPG, PNG — แนะนำขนาดไม่เกิน 1MB</p>
+                                </div>
+                                <img id="imgPreview" class="hidden" style="width:100%;border-radius:10px;max-height:220px;object-fit:cover;display:none">
+                            </div>
+                            <input type="file" id="imgFileInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+                            <button type="button" id="btnRemoveImg" onclick="removeImage()" class="hidden" style="margin-top:8px;font-size:12px;color:#dc2626;background:none;border:none;cursor:pointer;padding:0">✕ ลบรูป</button>
+                        </div>
+
+                        <!-- YouTube URL -->
+                        <div style="margin-bottom:20px;background:#fafaf9;border:1px solid #e7e5e4;border-radius:12px;padding:14px 16px">
+                            <label class="field-label" style="margin-bottom:8px">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000" style="display:inline;vertical-align:middle;margin-right:6px"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+                                YouTube URL <span class="text-stone-400 font-normal">(แสดง video บนหน้าบทความแทนรูป — card ยังใช้รูปภาพ)</span>
+                            </label>
+                            <input type="url" id="sYoutubeUrl" placeholder="https://www.youtube.com/watch?v=..." oninput="updateYoutubePreview()" style="margin-bottom:10px">
+                            <div id="ytPreviewBox" style="display:none;border-radius:10px;overflow:hidden;aspect-ratio:16/9">
+                                <iframe id="ytPreviewFrame" width="100%" height="100%" frameborder="0" allowfullscreen style="display:block;border-radius:10px"></iframe>
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div style="margin-bottom:16px">
+                            <label class="field-label">ชื่อบทความ <span class="text-red-500">*</span></label>
+                            <input type="text" id="fTitle" placeholder="เช่น 5 วิธีลดหย่อนภาษีสำหรับมนุษย์เงินเดือน">
+                        </div>
+
+                        <!-- Categories -->
+                        <div style="margin-bottom:16px">
+                            <label class="field-label">หมวดหมู่ <span class="text-red-500">*</span> <span class="text-stone-400 font-normal">(เลือกได้หลายอัน)</span></label>
+                            <div style="display:flex;flex-wrap:wrap;gap:10px">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:8px 14px;font-size:13px;font-weight:600;transition:.15s" class="cat-label">
+                                    <input type="checkbox" name="cats" value="วางแผนภาษี" class="cat-cb" style="accent-color:#1e3a8a;width:15px;height:15px"> วางแผนภาษี
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:8px 14px;font-size:13px;font-weight:600;transition:.15s" class="cat-label">
+                                    <input type="checkbox" name="cats" value="วางแผนเกษียณ" class="cat-cb" style="accent-color:#d97706;width:15px;height:15px"> วางแผนเกษียณ
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:8px 14px;font-size:13px;font-weight:600;transition:.15s" class="cat-label">
+                                    <input type="checkbox" name="cats" value="วางแผนลงทุน" class="cat-cb" style="accent-color:#059669;width:15px;height:15px"> วางแผนลงทุน
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:8px 14px;font-size:13px;font-weight:600;transition:.15s" class="cat-label">
+                                    <input type="checkbox" name="cats" value="วางแผนการเงิน" class="cat-cb" style="accent-color:#2563eb;width:15px;height:15px"> วางแผนการเงิน
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:8px 14px;font-size:13px;font-weight:600;transition:.15s" class="cat-label">
+                                    <input type="checkbox" name="cats" value="วางแผนประกัน" class="cat-cb" style="accent-color:#7c3aed;width:15px;height:15px"> วางแผนประกัน
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Date + ReadTime + ShortDesc -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                            <div>
+                                <label class="field-label">วันที่ <span class="text-red-500">*</span></label>
+                                <input type="text" id="fDate" placeholder="29 มิ.ย. 2569">
+                            </div>
+                            <div>
+                                <label class="field-label">เวลาอ่าน <span class="text-red-500">*</span></label>
+                                <input type="text" id="fReadTime" placeholder="5 นาที">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="field-label">คำอธิบายย่อ <span class="text-stone-400 font-normal">(แสดงบน card)</span> <span class="text-red-500">*</span></label>
+                            <textarea id="fShortDesc" rows="2" placeholder="สรุปบทความสั้นๆ 1-2 ประโยค..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── เกริ่นนำ ── -->
+                <div class="section-card">
+                    <div class="section-header" style="cursor:default">
+                        <span style="font-size:18px">📝</span>
+                        <span class="font-bold text-navy-900">เกริ่นนำ</span>
+                        <span class="text-xs text-stone-400 ml-1">(เนื้อหาเปิดบทความ)</span>
+                    </div>
+                    <div class="section-body">
+                        <textarea id="sIntro" rows="4" placeholder="เขียนย่อหน้าเปิดบทความ เพื่อดึงดูดผู้อ่าน...&#10;&#10;รองรับหลายย่อหน้า โดยเว้นบรรทัดว่างระหว่างย่อหน้า"></textarea>
+                    </div>
+                </div>
+
+                <!-- ── หัวข้อหลัก / สูตร / หลักการ ── -->
+                <div class="section-card" id="sec-principle">
+                    <div class="section-header" onclick="toggleSection('principle')">
+                        <button class="section-toggle on" id="tog-principle" onclick.stop></button>
+                        <span style="font-size:18px">📐</span>
+                        <span class="font-bold text-navy-900">หัวข้อหลัก / สูตร / หลักการ</span>
+                        <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
+                    </div>
+                    <div class="section-body" id="body-principle">
+                        <div style="margin-bottom:12px">
+                            <label class="field-label">ชื่อหัวข้อ</label>
+                            <input type="text" id="sPrincipleTitle" placeholder="เช่น สูตรคำนวณบำนาญ กบข.">
+                        </div>
+                        <div>
+                            <label class="field-label">เนื้อหา <span class="text-stone-400 font-normal">(แสดงในกล่องสีฟ้า)</span></label>
+                            <textarea id="sPrincipleContent" rows="5" placeholder="เช่น บำนาญ = เงินเดือน x อายุราชการ / 50&#10;&#10;ฐานเงินเดือน: เฉลี่ย 60 เดือนสุดท้าย&#10;เพดานอัตราบำนาญสูงสุดไม่เกิน 70%"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── ตัวอย่างการคำนวณ ── -->
+                <div class="section-card" id="sec-example">
+                    <div class="section-header" onclick="toggleSection('example')">
+                        <button class="section-toggle on" id="tog-example"></button>
+                        <span style="font-size:18px">🧮</span>
+                        <span class="font-bold text-navy-900">ตัวอย่างการคำนวณ / กรณีศึกษา</span>
+                        <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
+                    </div>
+                    <div class="section-body" id="body-example">
+                        <div style="margin-bottom:12px">
+                            <label class="field-label">ชื่อส่วน</label>
+                            <input type="text" id="sExampleTitle" placeholder="เช่น ตัวอย่างการคำนวณ">
+                        </div>
+                        <div>
+                            <label class="field-label">เนื้อหา <span class="text-stone-400 font-normal">(แสดงในกล่องสีฟ้าอ่อน)</span></label>
+                            <textarea id="sExampleContent" rows="5" placeholder="เช่น เงินเดือนเฉลี่ย: 40,000 บ.&#10;อายุราชการ: 30 ปี&#10;บำนาญ = 40,000 x 30 / 50 = 24,000 บาท/เดือน"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── เคล็ดลับ CFP ── -->
+                <div class="section-card" id="sec-tip">
+                    <div class="section-header" onclick="toggleSection('tip')">
+                        <button class="section-toggle on" id="tog-tip"></button>
+                        <span style="font-size:18px">💡</span>
+                        <span class="font-bold text-navy-900">เคล็ดลับ / มุมมอง CFP</span>
+                        <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
+                    </div>
+                    <div class="section-body" id="body-tip">
+                        <div style="margin-bottom:12px">
+                            <label class="field-label">ชื่อหัวข้อ <span class="text-stone-400 font-normal">(ค่าเริ่มต้น: 💡 เคล็ดลับ CFP)</span></label>
+                            <input type="text" id="sTipTitle" placeholder="เช่น 💡 เคล็ดลับ CFP หรือ 💡 ทริคจาก vikorn.planner">
+                        </div>
+                        <div>
+                            <label class="field-label">เนื้อหา <span class="text-stone-400 font-normal">(แสดงในกล่องสีทอง)</span></label>
+                            <textarea id="sTipContent" rows="3" placeholder="เช่น ทริค CFP: นำยอดบำนาญนี้ไปหักออกจากเป้าหมายรายจ่ายต่อเดือน เพื่อหาเงินส่วนที่ต้องลงทุนเพิ่ม"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── ข้อควรระวัง ── -->
+                <div class="section-card" id="sec-warn">
+                    <div class="section-header" onclick="toggleSection('warn')">
+                        <button class="section-toggle on" id="tog-warn"></button>
+                        <span style="font-size:18px">⚠️</span>
+                        <span class="font-bold text-navy-900">ข้อควรระวัง / จุดสำคัญ</span>
+                        <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
+                    </div>
+                    <div class="section-body" id="body-warn">
+                        <div style="margin-bottom:12px">
+                            <label class="field-label">ชื่อหัวข้อ <span class="text-stone-400 font-normal">(ค่าเริ่มต้น: ข้อควรระวัง)</span></label>
+                            <input type="text" id="sWarnTitle" placeholder="เช่น ข้อควรระวัง หรือ สิ่งที่ต้องรู้ก่อนตัดสินใจ">
+                        </div>
+                        <label class="field-label" style="margin-bottom:10px">รายการ <span class="text-stone-400 font-normal">(แสดงเป็นรายการลำดับเลข)</span></label>
+                        <div id="warnItems">
+                            <div class="list-item-row">
+                                <input type="text" placeholder="เช่น สมาชิก กบข. ต้องส่งเงินสมทบครบ 25 ปีจึงได้บำนาญ">
+                                <button type="button" class="btn-remove" onclick="removeWarnItem(this)">✕</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addWarnItem()">+ เพิ่มรายการ</button>
+                    </div>
+                </div>
+
+                <!-- ── สรุป ── -->
+                <div class="section-card" id="sec-conclusion">
+                    <div class="section-header" onclick="toggleSection('conclusion')">
+                        <button class="section-toggle on" id="tog-conclusion"></button>
+                        <span style="font-size:18px">✅</span>
+                        <span class="font-bold text-navy-900">บทสรุป</span>
+                        <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
+                    </div>
+                    <div class="section-body" id="body-conclusion">
+                        <textarea id="sConclusionContent" rows="4" placeholder="สรุปสาระสำคัญของบทความ พร้อม call-to-action ให้ผู้อ่านนำไปปฏิบัติ..."></textarea>
+                    </div>
+                </div>
+
+                <!-- ── หมายเหตุ ── -->
+                <div class="section-card" id="sec-note">
+                    <div class="section-header" onclick="toggleSection('note')">
+                        <button class="section-toggle off" id="tog-note"></button>
+                        <span style="font-size:18px">📌</span>
+                        <span class="font-bold text-navy-900">หมายเหตุ</span>
+                        <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
+                    </div>
+                    <div class="section-body hidden" id="body-note">
+                        <label class="field-label">ข้อความ <span class="text-stone-400 font-normal">(แสดงตัวเล็ก สีจาง ด้านล่างบทความ)</span></label>
+                        <textarea id="sNoteContent" rows="2" placeholder="เช่น บทความนี้จัดทำเพื่อให้ข้อมูลเบื้องต้นเท่านั้น ไม่ใช่คำแนะนำทางการเงินส่วนบุคคล"></textarea>
+                    </div>
+                </div>
+
+                <!-- ── กล่อง CTA สีกรมท่า ── -->
+                <div class="section-card" id="sec-cta">
+                    <div class="section-header" onclick="toggleSection('cta')">
+                        <button class="section-toggle off" id="tog-cta"></button>
+                        <span style="font-size:18px">🎯</span>
+                        <span class="font-bold text-navy-900">กล่อง CTA (สีกรมท่า)</span>
+                        <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
+                    </div>
+                    <div class="section-body hidden" id="body-cta">
+                        <div style="background:#172554;border-radius:12px;padding:20px;margin-bottom:16px;color:#fff">
+                            <p style="font-size:12px;color:#d4af37;margin-bottom:8px;font-weight:600">ตัวอย่างการแสดงผล</p>
+                            <p style="font-size:16px;font-weight:700;color:#d4af37;text-align:center" id="ctaPreviewTitle">หัวข้อ CTA</p>
+                            <p style="font-size:13px;color:#c7d7fe;text-align:center;margin:8px 0" id="ctaPreviewText">ข้อความอธิบาย</p>
+                            <div style="text-align:center"><span style="background:#d4af37;color:#172554;padding:8px 24px;border-radius:999px;font-weight:700;font-size:13px" id="ctaPreviewBtn">ปุ่ม</span></div>
+                        </div>
+                        <div style="margin-bottom:12px">
+                            <label class="field-label">หัวข้อ <span class="text-red-400">*</span></label>
+                            <input type="text" id="sCtaTitle" placeholder="เช่น อยากรู้ว่าเงินเกษียณตัวเองพอไหม?" oninput="updateCtaPreview()">
+                        </div>
+                        <div style="margin-bottom:16px">
+                            <label class="field-label">ข้อความ</label>
+                            <textarea id="sCtaText" rows="2" placeholder="เช่น vikorn.planner พร้อมช่วยวิเคราะห์และวางแผนให้คุณโดยเฉพาะ" oninput="updateCtaPreview()"></textarea>
+                        </div>
+                        <div>
+                            <label class="field-label" style="margin-bottom:12px">ปุ่มกด</label>
+                            <div style="display:flex;flex-direction:column;gap:10px">
+                                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;background:#f0f4ff;border:1.5px solid #a5b4fc;border-radius:12px;padding:12px 16px">
+                                    <input type="radio" name="ctaBtn" value="contact" checked style="accent-color:#1e3a8a;width:16px;height:16px" onchange="updateCtaPreview()">
+                                    <div>
+                                        <div style="font-weight:700;font-size:14px;color:#172554">นัดหมายปรึกษา</div>
+                                        <div style="font-size:12px;color:#6b7280">เปิดหน้าจองนัดหมายบนเว็บไซต์</div>
+                                    </div>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px 16px">
+                                    <input type="radio" name="ctaBtn" value="line" style="accent-color:#06C755;width:16px;height:16px" onchange="updateCtaPreview()">
+                                    <div>
+                                        <div style="font-weight:700;font-size:14px;color:#065f46">ทักมาพูดคุย</div>
+                                        <div style="font-size:12px;color:#6b7280">เปิด LINE: line.me/ti/p/8FRp0-cM4Z</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save -->
+                <div style="display:flex;gap:12px;padding-top:16px;border-top:1px solid #e7e5e4;margin-top:8px">
+                    <button type="button" onclick="saveArticle()" class="bg-navy-800 text-gold-400 font-bold px-8 py-3 rounded-xl hover:bg-navy-900 transition shadow" id="btnSave">💾 บันทึกบทความ</button>
+                    <button type="button" onclick="showDashboard()" style="background:#fff;border:1px solid #d1d5db;color:#44403c;font-weight:600;padding:12px 24px;border-radius:12px;cursor:pointer">ยกเลิก</button>
+                </div>
+            </div><!-- /tabEditContent -->
+
+            <!-- PREVIEW TAB -->
+            <div id="tabPreviewContent" class="hidden">
+                <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-8 min-h-64 preview-body" id="previewContent">
+                    <p style="color:#a8a29e;text-align:center;padding:64px 0">กรอกข้อมูลในแท็บ "แก้ไข" แล้วกดแท็บ "ตัวอย่าง" เพื่อดูผลลัพธ์</p>
+                </div>
+            </div>
+
+        </div><!-- /formView -->
+    </div><!-- /max-w -->
+</div><!-- /adminApp -->
+
+<script>
+    const STORAGE_KEY = 'vikorn_custom_articles';
+    const SESSION_KEY = 'vikorn_admin_logged_in';
+    const PASSWORD    = 'b0$Ub0$U';
+
+    const CAT_META = {
+        'วางแผนภาษี'   :{ chipClass:'chip-ภาษี',   badgeCls:'bg-navy-100 text-navy-800'    },
+        'วางแผนเกษียณ' :{ chipClass:'chip-เกษียณ',  badgeCls:'bg-amber-100 text-amber-800'  },
+        'วางแผนลงทุน'  :{ chipClass:'chip-ลงทุน',   badgeCls:'bg-emerald-100 text-emerald-800'},
+        'วางแผนการเงิน':{ chipClass:'chip-การเงิน',  badgeCls:'bg-blue-100 text-blue-800'    },
+        'วางแผนประกัน' :{ chipClass:'chip-ประกัน',   badgeCls:'bg-purple-100 text-purple-800'},
+    };
+    const ICON_BG = {
+        'วางแผนภาษี':'bg-navy-50','วางแผนเกษียณ':'bg-amber-50',
+        'วางแผนลงทุน':'bg-emerald-50','วางแผนการเงิน':'bg-blue-50','วางแผนประกัน':'bg-purple-50'
+    };
+
+    /* ─── Auth ─── */
+    function doLogin(e){ e.preventDefault();
+        if(document.getElementById('pwInput').value===PASSWORD){
+            sessionStorage.setItem(SESSION_KEY,'1');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminApp').classList.remove('hidden');
+            renderDashboard();
+        } else {
+            document.getElementById('loginError').classList.remove('hidden');
+            document.getElementById('pwInput').value='';
+        }
+    }
+    function doLogout(){ sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+
+    if(sessionStorage.getItem(SESSION_KEY)){
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('adminApp').classList.remove('hidden');
+        renderDashboard();
+    }
+
+    /* ─── Storage ─── */
+    function getArticles(){ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }
+    function saveArticles(arr){ localStorage.setItem(STORAGE_KEY,JSON.stringify(arr)); }
+
+    /* ─── Image ─── */
+    let currentImageData = null;
+    function handleImageUpload(input){
+        const file = input.files[0]; if(!file) return;
+        if(file.size > 2*1024*1024){ alert('ไฟล์ใหญ่เกิน 2MB กรุณาย่อขนาดรูปก่อน'); return; }
+        const reader = new FileReader();
+        reader.onload = e => {
+            currentImageData = e.target.result;
+            document.getElementById('imgPreview').src = currentImageData;
+            document.getElementById('imgPreview').style.display = 'block';
+            document.getElementById('imgPlaceholder').style.display = 'none';
+            document.getElementById('btnRemoveImg').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+    function removeImage(){
+        currentImageData = null;
+        document.getElementById('imgFileInput').value='';
+        document.getElementById('imgPreview').style.display='none';
+        document.getElementById('imgPlaceholder').style.display='block';
+        document.getElementById('btnRemoveImg').classList.add('hidden');
+    }
+
+    /* ─── Section toggles ─── */
+    const secState = { principle:true, example:true, tip:true, warn:true, conclusion:true, note:false, cta:false };
+
+    function getYoutubeEmbedId(url){
+        if(!url) return null;
+        const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+        return m ? m[1] : null;
+    }
+    function updateYoutubePreview(){
+        const url = document.getElementById('sYoutubeUrl').value.trim();
+        const vid = getYoutubeEmbedId(url);
+        const box = document.getElementById('ytPreviewBox');
+        const frame = document.getElementById('ytPreviewFrame');
+        if(vid){ box.style.display='block'; frame.src=`https://www.youtube.com/embed/${vid}`; }
+        else   { box.style.display='none';  frame.src=''; }
+    }
+
+    function updateCtaPreview(){
+        const t = (document.getElementById('sCtaTitle')||{value:''}).value || 'หัวข้อ CTA';
+        const tx = (document.getElementById('sCtaText')||{value:''}).value || 'ข้อความอธิบาย';
+        const btn = document.querySelector('input[name="ctaBtn"]:checked');
+        const btnLabel = btn && btn.value==='line' ? 'ทักมาพูดคุย' : 'นัดหมายปรึกษา';
+        const pt = document.getElementById('ctaPreviewTitle');
+        const ptx = document.getElementById('ctaPreviewText');
+        const pb = document.getElementById('ctaPreviewBtn');
+        if(pt) pt.textContent = t;
+        if(ptx) ptx.textContent = tx;
+        if(pb) pb.textContent = btnLabel;
+    }
+    function toggleSection(key){
+        secState[key] = !secState[key];
+        const tog  = document.getElementById('tog-'+key);
+        const body = document.getElementById('body-'+key);
+        tog.className  = 'section-toggle '+(secState[key]?'on':'off');
+        body.className = 'section-body '+(secState[key]?'':'hidden');
+    }
+
+    /* ─── Warn list ─── */
+    function addWarnItem(){
+        const div = document.createElement('div');
+        div.className='list-item-row';
+        div.innerHTML=`<input type="text" placeholder="ระบุข้อควรระวัง...">
+            <button type="button" class="btn-remove" onclick="removeWarnItem(this)">✕</button>`;
+        document.getElementById('warnItems').appendChild(div);
+    }
+    function removeWarnItem(btn){
+        const rows = document.getElementById('warnItems').querySelectorAll('.list-item-row');
+        if(rows.length>1) btn.closest('.list-item-row').remove();
+        else btn.closest('.list-item-row').querySelector('input').value='';
+    }
+
+    /* ─── Build HTML body from sections ─── */
+    function buildBody(){
+        const parts = [];
+        // Intro
+        const intro = document.getElementById('sIntro').value.trim();
+        if(intro){
+            intro.split(/\n\s*\n/).forEach(p => { if(p.trim()) parts.push(`<p>${p.trim().replace(/\n/g,'<br>')}</p>`); });
+        }
+        // Principle
+        if(secState.principle){
+            const t = document.getElementById('sPrincipleTitle').value.trim();
+            const c = document.getElementById('sPrincipleContent').value.trim();
+            if(t) parts.push(`<h2>${t}</h2>`);
+            if(c) parts.push(`<div class="bg-navy-50 border-l-4 border-navy-700 pl-5 py-4 rounded-r-xl my-4"><p style="white-space:pre-line;margin:0">${c}</p></div>`);
+        }
+        // Example
+        if(secState.example){
+            const t = document.getElementById('sExampleTitle').value.trim();
+            const c = document.getElementById('sExampleContent').value.trim();
+            if(t) parts.push(`<h3>${t}</h3>`);
+            if(c) parts.push(`<div class="bg-blue-50 border border-blue-200 rounded-xl p-5 my-3"><p style="white-space:pre-line;margin:0;color:#1e3a8a">${c}</p></div>`);
+        }
+        // Tip
+        if(secState.tip){
+            const titleRaw = document.getElementById('sTipTitle').value.trim();
+            const tipLabel = titleRaw || '💡 เคล็ดลับ CFP';
+            const c = document.getElementById('sTipContent').value.trim();
+            if(c) parts.push(`<div class="bg-gold-50 border-l-4 border-gold-500 pl-5 py-4 rounded-r-xl my-4"><p class="font-bold text-gold-600" style="margin-bottom:4px">${tipLabel}</p><p style="white-space:pre-line;margin:0">${c}</p></div>`);
+        }
+        // Warn
+        if(secState.warn){
+            const warnTitleRaw = document.getElementById('sWarnTitle').value.trim();
+            const warnLabel = warnTitleRaw || 'ข้อควรระวัง';
+            const items = [...document.querySelectorAll('#warnItems .list-item-row input')]
+                .map(el=>el.value.trim()).filter(Boolean);
+            if(items.length){
+                const lis = items.map((item,i)=>`<li><strong>${i+1}.</strong> ${item}</li>`).join('');
+                parts.push(`<h3>${warnLabel}</h3><div class="bg-red-50 border border-red-200 rounded-xl p-5 my-3"><ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">${lis}</ul></div>`);
+            }
+        }
+        // Conclusion
+        if(secState.conclusion){
+            const c = document.getElementById('sConclusionContent').value.trim();
+            if(c){
+                c.split(/\n\s*\n/).forEach(p=>{ if(p.trim()) parts.push(`<p>${p.trim().replace(/\n/g,'<br>')}</p>`); });
+            }
+        }
+        // Note
+        if(secState.note){
+            const c = document.getElementById('sNoteContent').value.trim();
+            if(c) parts.push(`<p style="font-size:.8rem;color:#a8a29e;font-style:italic;margin-top:2rem;padding-top:1rem;border-top:1px solid #e7e5e4">${c}</p>`);
+        }
+        // CTA box (last)
+        if(secState.cta){
+            const ctaTitle = document.getElementById('sCtaTitle').value.trim();
+            const ctaText  = document.getElementById('sCtaText').value.trim();
+            const ctaBtnEl = document.querySelector('input[name="ctaBtn"]:checked');
+            const ctaBtnVal = ctaBtnEl ? ctaBtnEl.value : 'contact';
+            const btnLabel  = ctaBtnVal==='line' ? 'ทักมาพูดคุย' : 'นัดหมายปรึกษา';
+            const btnAction = ctaBtnVal==='line'
+                ? `onclick="window.open('https://line.me/ti/p/8FRp0-cM4Z','_blank')"`
+                : `onclick="router.goHome('#contact')"`;
+            if(ctaTitle){
+                parts.push(`<div style="background:#172554;border-radius:20px;padding:36px 28px;text-align:center;margin:32px 0">
+<p style="font-size:1.25rem;font-weight:700;color:#d4af37;margin-bottom:12px">${ctaTitle}</p>
+${ctaText?`<p style="color:#c7d7fe;margin-bottom:24px;font-size:.95rem;line-height:1.7">${ctaText}</p>`:''}
+<button ${btnAction} style="background:#d4af37;color:#172554;font-weight:700;padding:12px 32px;border-radius:999px;border:none;font-size:1rem;cursor:pointer">${btnLabel}</button>
+</div>`);
+            }
+        }
+        return parts.join('\n');
+    }
+
+    /* ─── Save ─── */
+    function saveArticle(){
+        const cats=[...document.querySelectorAll('input[name="cats"]:checked')].map(el=>el.value);
+        const title=document.getElementById('fTitle').value.trim();
+        const date =document.getElementById('fDate').value.trim();
+        const rt   =document.getElementById('fReadTime').value.trim();
+        const sd   =document.getElementById('fShortDesc').value.trim();
+        if(!title||!date||!rt||!sd){ alert('กรุณากรอกข้อมูลพื้นฐานให้ครบ (ชื่อบทความ, วันที่, เวลาอ่าน, คำอธิบายย่อ)'); return; }
+        if(!cats.length){ alert('กรุณาเลือกอย่างน้อย 1 หมวดหมู่'); return; }
+
+        const editId = document.getElementById('editId').value;
+        const article = {
+            id        : editId || 'custom_'+Date.now(),
+            title, categories:cats, date, readTime:rt, shortDesc:sd,
+            imageData : currentImageData,
+            body      : buildBody()
+        };
+        let arr = getArticles();
+        if(editId){ const i=arr.findIndex(a=>a.id===editId); if(i>=0) arr[i]=article; else arr.push(article); }
+        else arr.push(article);
+        saveArticles(arr);
+        showDashboard();
+    }
+
+    /* ─── Edit ─── */
+    function editArticle(id){
+        const a=getArticles().find(a=>a.id===id); if(!a) return;
+        showFormWithData(a);
+    }
+    function showFormWithData(a){
+        document.getElementById('dashboardView').classList.add('hidden');
+        document.getElementById('formView').classList.remove('hidden');
+        document.getElementById('formTitle').textContent='แก้ไขบทความ';
+        document.getElementById('editId').value = a.id||'';
+        document.getElementById('fTitle').value     = a.title||'';
+        document.getElementById('fDate').value      = a.date||'';
+        document.getElementById('fReadTime').value  = a.readTime||'';
+        document.getElementById('fShortDesc').value = a.shortDesc||'';
+        document.querySelectorAll('input[name="cats"]').forEach(el=>el.checked=(a.categories||[]).includes(el.value));
+        // Image
+        currentImageData = a.imageData||null;
+        if(currentImageData){
+            document.getElementById('imgPreview').src=currentImageData;
+            document.getElementById('imgPreview').style.display='block';
+            document.getElementById('imgPlaceholder').style.display='none';
+            document.getElementById('btnRemoveImg').classList.remove('hidden');
+        } else { removeImage(); }
+        // YouTube URL
+        document.getElementById('sYoutubeUrl').value = a.youtubeUrl||'';
+        updateYoutubePreview();
+        // Parse body back to sections (best-effort)
+        document.getElementById('sIntro').value='';
+        document.getElementById('sPrincipleTitle').value='';
+        document.getElementById('sPrincipleContent').value='';
+        document.getElementById('sExampleTitle').value='';
+        document.getElementById('sExampleContent').value='';
+        document.getElementById('sTipContent').value='';
+        document.getElementById('sConclusionContent').value='';
+        document.getElementById('sNoteContent').value='';
+        document.querySelectorAll('#warnItems .list-item-row').forEach((el,i)=>{if(i>0)el.remove(); else el.querySelector('input').value='';});
+        // If article was created with structured editor, try to re-parse
+        if(a.structured){
+            document.getElementById('sIntro').value           = a.structured.intro||'';
+            document.getElementById('sPrincipleTitle').value  = a.structured.principleTitle||'';
+            document.getElementById('sPrincipleContent').value= a.structured.principleContent||'';
+            document.getElementById('sExampleTitle').value    = a.structured.exampleTitle||'';
+            document.getElementById('sExampleContent').value  = a.structured.exampleContent||'';
+            document.getElementById('sTipTitle').value        = a.structured.tipTitle||'';
+            document.getElementById('sTipContent').value      = a.structured.tip||'';
+            document.getElementById('sWarnTitle').value       = a.structured.warnTitle||'';
+            document.getElementById('sConclusionContent').value= a.structured.conclusion||'';
+            document.getElementById('sNoteContent').value     = a.structured.note||'';
+            document.getElementById('sCtaTitle').value        = a.structured.ctaTitle||'';
+            document.getElementById('sCtaText').value         = a.structured.ctaText||'';
+            const ctaBtnVal = a.structured.ctaBtn||'contact';
+            const rbEl = document.querySelector(`input[name="ctaBtn"][value="${ctaBtnVal}"]`);
+            if(rbEl) rbEl.checked=true;
+            updateCtaPreview();
+            (a.structured.warnItems||[]).forEach((item,i)=>{
+                if(i===0){ document.querySelector('#warnItems .list-item-row input').value=item; }
+                else { addWarnItem(); document.querySelectorAll('#warnItems .list-item-row input')[i].value=item; }
+            });
+            ['principle','example','tip','warn','conclusion','note','cta'].forEach(k=>{
+                const on = a.structured['sec_'+k]!==false && a.structured['sec_'+k]!==undefined
+                    ? a.structured['sec_'+k]
+                    : (k==='note'||k==='cta' ? false : true);
+                if(secState[k]!==on) toggleSection(k);
+            });
+        }
+        switchTab('edit');
+    }
+
+    /* ─── Override save to store structured data too ─── */
+    const _origSave = saveArticle;
+    saveArticle = function(){
+        const cats=[...document.querySelectorAll('input[name="cats"]:checked')].map(el=>el.value);
+        const title=document.getElementById('fTitle').value.trim();
+        const date =document.getElementById('fDate').value.trim();
+        const rt   =document.getElementById('fReadTime').value.trim();
+        const sd   =document.getElementById('fShortDesc').value.trim();
+        if(!title||!date||!rt||!sd){ alert('กรุณากรอกข้อมูลพื้นฐานให้ครบ'); return; }
+        if(!cats.length){ alert('กรุณาเลือกอย่างน้อย 1 หมวดหมู่'); return; }
+        const warnItems=[...document.querySelectorAll('#warnItems .list-item-row input')].map(el=>el.value.trim()).filter(Boolean);
+        const editId=document.getElementById('editId').value;
+        const article={
+            id        : editId||'custom_'+Date.now(),
+            title,categories:cats,date,readTime:rt,shortDesc:sd,
+            imageData  : currentImageData,
+            youtubeUrl : document.getElementById('sYoutubeUrl').value.trim(),
+            body       : buildBody(),
+            structured:{
+                intro           : document.getElementById('sIntro').value,
+                principleTitle  : document.getElementById('sPrincipleTitle').value,
+                principleContent: document.getElementById('sPrincipleContent').value,
+                exampleTitle    : document.getElementById('sExampleTitle').value,
+                exampleContent  : document.getElementById('sExampleContent').value,
+                tip             : document.getElementById('sTipContent').value,
+                conclusion      : document.getElementById('sConclusionContent').value,
+                note            : document.getElementById('sNoteContent').value,
+                tipTitle        : document.getElementById('sTipTitle').value,
+                warnTitle       : document.getElementById('sWarnTitle').value,
+                ctaTitle        : document.getElementById('sCtaTitle').value,
+                ctaText         : document.getElementById('sCtaText').value,
+                ctaBtn          : (document.querySelector('input[name="ctaBtn"]:checked')||{value:'contact'}).value,
+                warnItems,
+                sec_principle:secState.principle, sec_example:secState.example,
+                sec_tip:secState.tip, sec_warn:secState.warn,
+                sec_conclusion:secState.conclusion, sec_note:secState.note,
+                sec_cta:secState.cta
+            }
+        };
+        let arr=getArticles();
+        if(editId){ const i=arr.findIndex(a=>a.id===editId); if(i>=0) arr[i]=article; else arr.push(article); }
+        else arr.push(article);
+        saveArticles(arr);
+        const btn=document.getElementById('btnSave');
+        btn.textContent='✅ บันทึกแล้ว!';
+        setTimeout(()=>{showDashboard();},600);
+    };
+
+    /* ─── Delete ─── */
+    function deleteArticle(id){
+        if(!confirm('ต้องการลบบทความนี้ใช่หรือไม่?')) return;
+        saveArticles(getArticles().filter(a=>a.id!==id));
+        renderDashboard();
+    }
+
+    /* ─── Render Dashboard ─── */
+    function renderDashboard(){
+        const arts=getArticles();
+        document.getElementById('statTotal').textContent=arts.length;
+        const allCats=[...new Set(arts.flatMap(a=>a.categories||[]))];
+        document.getElementById('statCats').textContent=allCats.length;
+        document.getElementById('statLatest').textContent=arts.length?arts[arts.length-1].date:'—';
+        const el=document.getElementById('articleListEl');
+        const empty=document.getElementById('emptyState');
+        if(!arts.length){ el.innerHTML=''; empty.classList.remove('hidden'); return; }
+        empty.classList.add('hidden');
+        el.innerHTML=[...arts].reverse().map(a=>{
+            const chips=(a.categories||[]).map(c=>{const m=CAT_META[c]||{}; return `<span class="chip ${m.chipClass||''}">${c}</span>`;}).join('');
+            const thumb = a.imageData
+                ? `<img src="${a.imageData}" style="width:80px;height:60px;object-fit:cover;border-radius:10px;flex-shrink:0">`
+                : `<div style="width:80px;height:60px;background:#f3f4f6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">📝</div>`;
+            return `<div style="background:#fff;border:1px solid #e7e5e4;border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+                ${thumb}
+                <div style="flex:1;min-width:0">
+                    <div style="margin-bottom:4px">${chips}</div>
+                    <div style="font-weight:700;color:#172554;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.title}</div>
+                    <div style="font-size:12px;color:#a8a29e;margin-top:2px">${a.date} • อ่าน ${a.readTime}</div>
+                </div>
+                <div style="display:flex;gap:8px;flex-shrink:0">
+                    <button onclick='editArticle("${a.id}")' style="font-size:12px;background:#f0f4ff;color:#1e3a8a;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600">แก้ไข</button>
+                    <button onclick='deleteArticle("${a.id}")' style="font-size:12px;background:#fee2e2;color:#dc2626;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600">ลบ</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    /* ─── showForm (new) ─── */
+    function showForm(){
+        document.getElementById('dashboardView').classList.add('hidden');
+        document.getElementById('formView').classList.remove('hidden');
+        document.getElementById('formTitle').textContent='เพิ่มบทความใหม่';
+        document.getElementById('editId').value='';
+        document.getElementById('fTitle').value='';
+        document.getElementById('fDate').value='';
+        document.getElementById('fReadTime').value='';
+        document.getElementById('fShortDesc').value='';
+        document.getElementById('sIntro').value='';
+        document.getElementById('sPrincipleTitle').value='';
+        document.getElementById('sPrincipleContent').value='';
+        document.getElementById('sExampleTitle').value='';
+        document.getElementById('sExampleContent').value='';
+        document.getElementById('sTipTitle').value='';
+        document.getElementById('sTipContent').value='';
+        document.getElementById('sWarnTitle').value='';
+        document.getElementById('sConclusionContent').value='';
+        document.getElementById('sNoteContent').value='';
+        document.getElementById('sCtaTitle').value='';
+        document.getElementById('sCtaText').value='';
+        const defRb = document.querySelector('input[name="ctaBtn"][value="contact"]');
+        if(defRb) defRb.checked=true;
+        document.querySelectorAll('input[name="cats"]').forEach(el=>el.checked=false);
+        document.querySelectorAll('#warnItems .list-item-row').forEach((el,i)=>{if(i>0)el.remove();else el.querySelector('input').value='';});
+        removeImage();
+        document.getElementById('sYoutubeUrl').value='';
+        updateYoutubePreview();
+        // Reset sections to default state
+        ['principle','example','tip','warn','conclusion'].forEach(k=>{ if(!secState[k]){toggleSection(k);} });
+        if(secState.note) toggleSection('note');
+        if(secState.cta) toggleSection('cta');
+        switchTab('edit');
+    }
+
+    /* ─── showDashboard ─── */
+    function showDashboard(){
+        document.getElementById('dashboardView').classList.remove('hidden');
+        document.getElementById('formView').classList.add('hidden');
+        renderDashboard();
+    }
+
+    /* ─── Tab ─── */
+    function switchTab(tab){
+        const isEdit=tab==='edit';
+        document.getElementById('tabEditBtn').className    ='tab-btn '+(isEdit?'active':'');
+        document.getElementById('tabPreviewBtn').className ='tab-btn '+(!isEdit?'active':'');
+        document.getElementById('tabEditContent').classList.toggle('hidden',!isEdit);
+        document.getElementById('tabPreviewContent').classList.toggle('hidden',isEdit);
+        if(!isEdit) renderPreview();
+    }
+    function renderPreview(){
+        const title=document.getElementById('fTitle').value||'ชื่อบทความ';
+        const cats=[...document.querySelectorAll('input[name="cats"]:checked')].map(el=>el.value);
+        const chips=cats.map(c=>{const m=CAT_META[c]||{}; return `<span class="chip ${m.chipClass||''}">${c}</span>`;}).join('');
+        const imgHtml=currentImageData
+            ?`<img src="${currentImageData}" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin:16px 0">`
+            :'';
+        document.getElementById('previewContent').innerHTML=
+            `<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e7e5e4">
+                <div style="margin-bottom:8px">${chips}</div>
+                <h1 style="font-size:1.5rem;font-weight:700;color:#172554">${title}</h1>
+                <p style="font-size:13px;color:#a8a29e">${document.getElementById('fDate').value||'—'} • อ่าน ${document.getElementById('fReadTime').value||'—'}</p>
+            </div>
+            ${imgHtml}
+            ${buildBody()||'<p style="color:#a8a29e">ยังไม่มีเนื้อหา</p>'}`;
+    }
+</script>
+</body>
+</html>

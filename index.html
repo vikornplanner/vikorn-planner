@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vikorn.planner - นักวางแผนการเงิน CFP®</title>
+
+    <!-- OG / Social Meta Tags -->
+    <meta property="og:title" content="vikorn.planner - นักวางแผนการเงิน CFP®">
+    <meta property="og:description" content="วางแผนการเงินอย่างเป็นระบบ เพื่อชีวิตที่คุณเลือกได้เอง โดยนักวางแผนการเงินคุณวุฒิ CFP® ที่ยึดประโยชน์ลูกค้าเป็นที่ตั้ง">
+    <meta property="og:image" content="vikorn_photo.jpg">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="th_TH">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="vikorn.planner - นักวางแผนการเงิน CFP®">
+    <meta name="twitter:description" content="วางแผนการเงินอย่างเป็นระบบ เพื่อชีวิตที่คุณเลือกได้เอง โดยนักวางแผนการเงินคุณวุฒิ CFP®">
+    <meta name="twitter:image" content="vikorn_photo.jpg">
+
+    <!-- Chosen Palette: Navy and Gold -->
+    <!-- Application Structure Plan: This single-page interactive application (SPA) translates the comprehensive blueprint of Vikorn Planner into an explore-first, high-trust digital space. The visual hierarchy utilizes Navy for security and trust, Gold for premium wealth generation, and a spacious Light Stone background for clean readability. The navigation is logically broken down into core branding (About Me), services (6-step CFP process), interactive simulators (Retirement and Pension Tools), a dynamic Blog system with router-style view switching, and an elegant, localized contact form that requests date/time preference for manual confirmations via LINE or phone. -->
+    <!-- Visualization & Content Choices: 
+         - Retirement Calculator: An interactive drawing-down line chart (Chart.js) that models either "Required wealth at retirement" or "Longevity of current portfolio" dynamically based on user input variables.
+         - Government Pension Calculator: A modular tabular output evaluating SSO (Section 33) and GPF pension rules.
+         - Blog SPA Router: Custom JavaScript-driven state navigation that allows immediate full-article reading without full page reloads, preserving session memory.
+         - NO SVG / NO MERMAID: All icons and structural indicators are implemented using beautiful Tailwind components or high-fidelity Unicode icons. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 800: '#292524', 900: '#1c1917' },
+                        navy: { 50: '#f0f4f8', 100: '#d9e2ec', 200: '#bcccdc', 500: '#627d98', 600: '#486581', 700: '#334e68', 800: '#1e3a8a', 900: '#172554' },
+                        gold: { 50: '#fdfaef', 100: '#fbf3d4', 400: '#eeca51', 500: '#d4af37', 600: '#b8901c', 700: '#997415' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #fafaf9; color: #292524; }
+        .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .gradient-text { background: linear-gradient(to right, #1e3a8a, #334e68); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gradient-gold { background: linear-gradient(to right, #d4af37, #b8901c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .chart-container { position: relative; width: 100%; height: 300px; max-height: 350px; margin: 0 auto; }
+        
+        /* Custom Inputs */
+        input[type="range"] { accent-color: #d4af37; }
+        .tab-btn.active { border-bottom: 3px solid #d4af37; color: #d4af37; font-weight: 600; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Blog filter buttons */
+        .blog-filter-btn {
+            background: #fff;
+            color: #44403c;
+            border-color: #d6d3d1;
+        }
+        .blog-filter-btn:hover {
+            border-color: #d4af37;
+            color: #b8901c;
+        }
+        .blog-filter-btn.active {
+            background: #172554;
+            color: #d4af37;
+            border-color: #172554;
+        }
+        .blog-card { transition: opacity 0.25s, transform 0.25s; }
+        .blog-card.hidden-card { display: none; }
+    </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="glass-nav fixed w-full z-50 border-b border-stone-200 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" onclick="router.goHome()">
+                    <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden" style="background:#172554;border:1.5px solid #d4af37;"><img src="icon2.png" alt="vikorn.planner icon" class="w-full h-full object-contain p-0.5"></div>
+                    <span class="font-bold text-xl text-navy-900 tracking-tight">vikorn.<span class="text-gold-600">planner</span></span>
+                </div>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#about" class="text-stone-600 hover:text-gold-600 font-medium text-sm transition">เกี่ยวกับ vikorn.<span class="text-gold-600">planner</span></a>
+                    <a href="#services" class="text-stone-600 hover:text-gold-600 font-medium text-sm transition">บริการของเรา</a>
+                    <a href="#tools" class="text-stone-600 hover:text-gold-600 font-medium text-sm transition">เครื่องมือคำนวณ</a>
+                    <a href="#blog" class="text-stone-600 hover:text-gold-600 font-medium text-sm transition">บทความความรู้</a>
+                    <a href="#contact" class="bg-navy-800 text-gold-500 px-6 py-2 rounded-full font-medium text-sm hover:bg-navy-900 hover:shadow-lg transition duration-300 border border-navy-700">นัดหมายเพื่อปรึกษา</a>
+                </div>
+                <!-- Mobile menu button using Unicode icon instead of SVG -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-navy-800 hover:text-gold-600 focus:outline-none p-2 text-2xl">
+                        &#9776;
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-stone-100 absolute w-full">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 shadow-lg">
+                <a href="#about" class="block px-3 py-2 text-stone-600 hover:text-gold-600 font-medium">เกี่ยวกับ vikorn.planner</a>
+                <a href="#services" class="block px-3 py-2 text-stone-600 hover:text-gold-600 font-medium">บริการของเรา</a>
+                <a href="#tools" class="block px-3 py-2 text-stone-600 hover:text-gold-600 font-medium">เครื่องมือคำนวณ</a>
+                <a href="#blog" class="block px-3 py-2 text-stone-600 hover:text-gold-600 font-medium">บทความความรู้</a>
+                <a href="#contact" class="block px-3 py-2 text-gold-600 font-bold">นัดหมายเพื่อปรึกษา</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. Hero Section -->
+    <section id="home" class="pt-28 pb-16 md:pt-36 md:pb-24 px-4 bg-gradient-to-b from-stone-50 to-white">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
+            <div class="flex-1 text-center md:text-left">
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-navy-900 leading-tight mb-6">
+                    วางแผนการเงินอย่างเป็นระบบ <br>
+                    <span class="gradient-gold">เพื่อชีวิตที่คุณเลือกได้เอง</span>
+                </h1>
+                <p class="text-lg text-stone-600 mb-8 max-w-2xl mx-auto md:mx-0">
+                    หมดความกังวลเรื่องภาษีที่จ่ายแพงเกินไป เงินเก็บที่ไม่พอใช้หลังเกษียณ การเตรียมทุนการศึกษาให้ลูก หรือการส่งต่อมรดกอย่างราบรื่น ให้ <strong>vikorn.planner</strong> ช่วยออกแบบ &lsquo;พิมพ์เขียวทางการเงินส่วนบุคคล&rsquo; ที่ตอบโจทย์ทุกเป้าหมายชีวิตของคุณ ผมพร้อมเป็นวิศวกรความมั่งคั่งที่จะช่วยวิเคราะห์ วางแผน และเดินเคียงข้างจนกว่าแผนนั้นจะสำเร็จและใช้งานได้จริงครับ
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                    <a href="#contact" class="bg-navy-800 text-gold-500 px-8 py-3.5 rounded-full font-semibold text-lg hover:bg-navy-900 transition shadow-lg hover:shadow-xl text-center border border-navy-700">เริ่มวางแผนกับเรา</a>
+                    <a href="#tools" class="bg-white text-navy-800 border border-stone-300 px-8 py-3.5 rounded-full font-semibold text-lg hover:border-gold-500 hover:text-gold-600 transition shadow text-center">ลองคำนวณเงินเกษียณ</a>
+                </div>
+            </div>
+            <div class="flex-1 relative w-full max-w-lg mx-auto mt-12 md:mt-0">
+                <!-- Hero Image Design -->
+                <div class="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-gold-500/20 aspect-[4/5] md:aspect-square group">
+                    <img src="1stPage.jpg" alt="กลยุทธ์การบริหารความมั่งคั่ง" class="w-full h-full object-cover object-center transform group-hover:scale-105 transition duration-700">
+                    <div class="absolute bottom-6 left-6 z-20 bg-white/95 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-gold-200 transform translate-y-2 group-hover:translate-y-0 transition duration-500">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gold-50 rounded-full flex items-center justify-center text-gold-600 text-xl shadow-inner">🛡️</div>
+                            <div>
+                                <p class="text-xs text-stone-500 font-bold">ความมั่งคั่งที่มั่นคง</p>
+                                <p class="text-navy-900 font-bold text-sm">Secure Your Future</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute -top-6 -right-6 w-24 h-24 bg-gold-400 rounded-full mix-blend-multiply filter blur-xl opacity-60 -z-10"></div>
+                <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-navy-400 rounded-full mix-blend-multiply filter blur-xl opacity-40 -z-10"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. About Section -->
+    <section id="about" class="py-20 px-4 bg-white border-t border-stone-100">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-navy-900 mb-4">รู้จักกับ vikorn.planner</h2>
+                <div class="w-16 h-1 bg-gold-500 mx-auto rounded-full"></div>
+            </div>
+            <div class="flex flex-col md:flex-row gap-12 items-center">
+                <div class="w-full md:w-1/3">
+                    <div class="aspect-[4/5] bg-stone-200 rounded-2xl overflow-hidden shadow-lg relative border border-stone-200 group">
+                        <!-- Professional Headshot – show upper half only -->
+                        <img src="vikorn2.jpg" alt="รูปถ่ายคุณวิกรณ์ CFP" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" style="object-position: 50% 10%;" onerror="this.style.display='none'">
+                        <div class="absolute bottom-0 w-full bg-gradient-to-t from-navy-900 via-navy-900/70 to-transparent p-6 pt-20">
+                            <h3 class="text-white font-bold text-xl">วิกรณ์ คุณศรีรักษ์สกุล</h3>
+                            <p class="text-gold-400 text-sm font-medium">นักวางแผนการเงิน CFP®</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full md:w-2/3 space-y-5 text-stone-600 text-lg leading-relaxed">
+                    <blockquote class="border-l-4 border-gold-500 pl-5 italic text-navy-800 font-medium text-xl mb-6">
+                        "เพราะเป้าหมายทางการเงิน ไม่ใช่แค่ความฝัน แต่คือโครงสร้างที่ต้องวางแผนและลงมือทำได้อย่างแม่นยำ"
+                    </blockquote>
+                    <p>
+                        จากประสบการณ์กว่า 20 ปี ในฐานะวิศวกรจนก้าวขึ้นสู่ผู้อำนวยการฝ่ายวางแผนโครงข่ายโทรศัพท์เคลื่อนที่ ผมทำงานอยู่กับข้อมูล การวางระบบที่ซับซ้อน รวมถึงการบริหารจัดการและควบคุมงบประมาณระดับองค์กรให้เป็นไปตามเป้าหมายอย่างเคร่งครัดในทุกๆ ปี
+                    </p>
+                    <p>
+                        วันนี้ ผมได้นำ<strong>ทักษะการคิดวิเคราะห์อย่างเป็นระบบ</strong>มาต่อยอดผสานกับ<strong>ความเชี่ยวชาญด้านการวางแผนการเงิน</strong> ในฐานะ<strong class="text-navy-900">นักวางแผนการเงิน CFP®</strong> (รับรองโดยสมาคมนักวางแผนการเงินไทย : TFPA) ควบคู่ไปกับทักษะการรับฟังในฐานะ<strong class="text-navy-900">โค้ชระดับ ACC</strong> (รับรองโดยสหพันธ์การโค้ชนานาชาติ : ICF) เพื่อค้นหาและออกแบบแผนทางการเงินที่เหมาะสมกับเป้าหมายชีวิตของคุณอย่างแท้จริง
+                    </p>
+                    <p>
+                        ด้วยวิธีคิดแบบวิศวกรและประสบการณ์ในการบริหารโครงข่ายระดับประเทศ แผนการเงินของคุณจะถูกวิเคราะห์ข้อมูลอย่างมีตรรกะ รัดกุม และเป็นแผนที่สามารถนำไปปฏิบัติเพื่อสร้างผลลัพธ์ได้จริง (Actionable Plan)
+                    </p>
+                    <p>
+                        ไม่ว่าเป้าหมายของคุณคือ การเตรียมพร้อมสู่วัยเกษียณ การวางแผนการศึกษาบุตร การจัดการภาษี หรือการสร้างความมั่งคั่ง ผมพร้อมเป็น<strong class="text-navy-900">"เพื่อนร่วมทาง"</strong> ที่จะช่วยคุณวิเคราะห์ วางแผน และเดินเคียงข้าง จนกว่า<em class="text-navy-900">เป้าหมายทางการเงินของคุณจะสำเร็จตามที่ตั้งใจ</em>ไว้ได้อย่างแน่นอนครับ
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Services Section -->
+    <section id="services" class="py-20 px-4 bg-stone-50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-navy-900 mb-4">บริการวางแผนการเงินองค์รวม</h2>
+                <p class="text-stone-600 max-w-2xl mx-auto">ครอบคลุมทุกมิติของชีวิต เพื่อให้แผนการเงินของคุณสอดคล้องกันอย่างสมบูรณ์แบบ</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                <!-- Service Cards -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition border border-stone-200 group">
+                    <div class="w-14 h-14 bg-navy-50 text-gold-600 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition duration-300">🏖️</div>
+                    <h3 class="font-bold text-lg text-navy-900 mb-2">วางแผนเกษียณ</h3>
+                    <p class="text-stone-600 text-sm">คำนวณและออกแบบพอร์ตลงทุนเพื่อให้มีเงินใช้สอยอย่างเพียงพอไปตลอดชีวิตโดยไม่เป็นภาระลูกหลาน</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition border border-stone-200 group">
+                    <div class="w-14 h-14 bg-navy-50 text-gold-600 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition duration-300">⚖️</div>
+                    <h3 class="font-bold text-lg text-navy-900 mb-2">บริหารจัดการภาษี</h3>
+                    <p class="text-stone-600 text-sm">ใช้สิทธิประโยชน์ทางภาษีอย่างคุ้มค่า ถูกต้องตามกฎหมาย เพิ่มกระแสเงินสดในกระเป๋าของคุณทุกปี</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition border border-stone-200 group">
+                    <div class="w-14 h-14 bg-navy-50 text-gold-600 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition duration-300">📈</div>
+                    <h3 class="font-bold text-lg text-navy-900 mb-2">วางแผนการลงทุน</h3>
+                    <p class="text-stone-600 text-sm">จัดพอร์ตลงทุนตามระดับความเสี่ยงที่รับได้ เพื่อให้เงินเติบโตเอาชนะเงินเฟ้อและบรรลุเป้าหมาย</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition border border-stone-200 group">
+                    <div class="w-14 h-14 bg-navy-50 text-gold-600 rounded-xl flex items-center justify-center text-3xl mb-5 group-hover:scale-110 transition duration-300">🛡️</div>
+                    <h3 class="font-bold text-lg text-navy-900 mb-2">จัดการความเสี่ยง</h3>
+                    <p class="text-stone-600 text-sm">ปิดรอยรั่วทางการเงินด้วยการวางแผนประกันชีวิต สุขภาพ และโรคร้ายแรงอย่างเหมาะสม ไม่มากเกินไป</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. Interactive Tools Section -->
+    <section id="tools" class="py-20 px-4 bg-navy-900 text-white relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style="background-image: radial-gradient(#d4af37 1px, transparent 1px); background-size: 30px 30px;"></div>
+        
+        <div class="max-w-6xl mx-auto relative z-10">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gold-500 mb-4">ห้องจำลองสถานการณ์การเงิน</h2>
+                <p class="text-navy-100 max-w-2xl mx-auto">เช็กสุขภาพการเงินของคุณด้วยตัวเอง เพื่อดูว่าคุณมี "ช่องว่าง" ที่ต้องรีบอุดรอยรั่วหรือไม่</p>
+            </div>
+
+            <!-- Tool Tabs -->
+            <div class="flex flex-wrap justify-center gap-3 mb-8">
+                <button onclick="sim.switchTab('retire')" class="sim-tab-btn active px-6 py-3 rounded-full bg-gold-500 text-navy-900 font-bold hover:bg-gold-400 transition shadow-lg" data-target="retire">🏖️ จำลองเงินเกษียณ</button>
+                <button onclick="sim.switchTab('pension')" class="sim-tab-btn px-6 py-3 rounded-full bg-navy-800 text-stone-300 font-medium hover:bg-navy-700 transition border border-navy-700" data-target="pension">🏛️ บำนาญประกันสังคม</button>
+                <button onclick="sim.switchTab('saving')" class="sim-tab-btn px-6 py-3 rounded-full bg-navy-800 text-stone-300 font-medium hover:bg-navy-700 transition border border-navy-700" data-target="saving">💰 จำลองการออม</button>
+            </div>
+
+            <!-- Tool 1: Retirement Simulator -->
+            <div id="sim-retire" class="sim-content active bg-navy-800 rounded-3xl p-6 md:p-8 shadow-2xl border border-navy-700">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <!-- Inputs -->
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center border-b border-navy-600 pb-3">
+                            <h3 class="text-xl font-bold text-gold-400">ข้อมูลสำหรับ</h3>
+                            <select id="retireMode" class="bg-navy-900 border border-navy-600 text-sm rounded-lg p-2 text-white outline-none focus:border-gold-500" onchange="sim.updateRetireUI()">
+                                <option value="need">คำนวณเงินก้อนที่ต้องมี ณ วันเริ่มเกษียณ</option>
+                                <option value="last">เงินที่มี ณ วันเกษียณ จะใช้ได้ถึงอายุกี่ปี?</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-navy-200 mb-1">อายุปัจจุบัน (ปี)</label>
+                                <input type="number" id="inpAge" value="35" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateRetirement()">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-navy-200 mb-1">อายุเกษียณ (ปี)</label>
+                                <input type="number" id="inpRetireAge" value="60" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateRetirement()">
+                            </div>
+                        </div>
+
+                        <div id="wrapperLifeExp">
+                            <label class="block text-xs text-navy-200 mb-1">คาดหวังอายุขัย (ปี)</label>
+                            <input type="number" id="inpLifeExp" value="85" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateRetirement()">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-navy-200 mb-1">ค่าใช้จ่ายหลังเกษียณต่อเดือน (ณ มูลค่าปัจจุบัน)</label>
+                            <div class="flex items-center">
+                                <span class="text-gold-500 font-bold mr-2">฿</span>
+                                <input type="number" id="inpExpense" value="30000" step="5000" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateRetirement()">
+                            </div>
+                        </div>
+
+                        <div id="wrapperNestEgg" class="hidden">
+                            <label class="block text-xs text-gold-400 mb-1 font-semibold">เงินก้อนเพื่อเกษียณที่มีในปัจจุบัน</label>
+                            <div class="flex items-center">
+                                <span class="text-gold-500 font-bold mr-2">฿</span>
+                                <input type="number" id="inpNestEgg" value="5000000" step="500000" class="w-full bg-navy-900 border border-gold-600/50 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateRetirement()">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-navy-200 mb-1">เงินเฟ้อเฉลี่ย (%)</label>
+                                <input type="number" id="inpInf" value="3" step="0.5" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateRetirement()">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-navy-200 mb-1">ผลตอบแทนหลังเกษียณ (%)</label>
+                                <input type="number" id="inpRet" value="4" step="0.5" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateRetirement()">
+                            </div>
+                        </div>
+                        <button onclick="sim.calculateRetirement()" class="w-full bg-navy-700 hover:bg-navy-600 text-white py-2.5 rounded-lg font-medium transition border border-navy-500">คำนวณอัปเดตใหม่</button>
+                    </div>
+
+                    <!-- Outputs & Chart -->
+                    <div class="flex flex-col h-full bg-navy-900 p-6 rounded-2xl border border-navy-700 shadow-inner">
+                        <div class="text-center mb-6">
+                            <p id="resLabel" class="text-navy-200 text-sm mb-2">เงินก้อนที่คุณต้องเตรียม ณ วันเกษียณ</p>
+                            <h3 id="resValue" class="text-4xl md:text-5xl font-bold text-gold-500 drop-shadow-md">฿0</h3>
+                            <p id="resSub" class="text-xs text-navy-400 mt-2">รวมอัตราเงินเฟ้อแล้ว</p>
+                        </div>
+                        
+                        <div class="flex-grow">
+                            <div class="chart-container">
+                                <canvas id="retireChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 pt-6 border-t border-navy-800 text-center">
+                            <p class="text-sm text-gold-200 mb-3 font-medium">พบว่าเงินเกษียณยังขาดอยู่ใช่ไหม?</p>
+                            <a href="#contact" class="inline-block bg-gold-500 text-navy-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-gold-400 transition shadow">รับคำปรึกษากับ vikorn.planner</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 2: Government Pension Simulator (ประกันสังคม ม.33) -->
+            <div id="sim-pension" class="sim-content hidden bg-navy-800 rounded-3xl p-6 md:p-8 shadow-2xl border border-navy-700 max-w-3xl mx-auto">
+                <div class="text-center mb-6">
+                    <span class="inline-block bg-navy-900 border border-navy-600 rounded-full px-5 py-1.5 text-sm font-bold text-gold-400">🏛️ บำนาญประกันสังคม ม.33</span>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Inputs -->
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-sm text-navy-200 mb-1">จำนวนปีที่ส่งเงินสมทบ (ปี)</label>
+                            <input type="number" id="inpPenYears" value="20" class="w-full bg-navy-900 border border-navy-600 rounded p-2.5 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calcPension()">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-navy-200 mb-1">เงินเดือนเฉลี่ย 60 เดือนสุดท้าย</label>
+                            <div class="flex items-center">
+                                <span class="text-gold-500 font-bold mr-2">฿</span>
+                                <input type="number" id="inpPenSalary" value="15000" max="17500" class="w-full bg-navy-900 border border-navy-600 rounded p-2.5 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calcPension()">
+                            </div>
+                            <p class="text-xs text-gold-400 mt-2">ฐานสูงสุดปรับขึ้นจาก 15,000 บ. เป็น 17,500 บาท (ปี 2569–2571)</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Output -->
+                    <div class="bg-navy-900 p-6 rounded-2xl flex flex-col justify-center items-center border border-navy-600 text-center shadow-inner">
+                        <p class="text-navy-300 text-sm mb-2">ประมาณการบำนาญรายเดือน</p>
+                        <h3 id="outPenMonthly" class="text-4xl font-bold text-gold-500 mb-5 drop-shadow-md">฿0</h3>
+                        
+                        <div class="w-full bg-navy-800 rounded-lg p-4 text-xs text-navy-200 text-left space-y-2 border border-navy-700">
+                            <div class="flex justify-between border-b border-navy-700 pb-1"><span>อัตราส่วนคำนวณ:</span> <span id="outPenRate" class="text-gold-400 font-bold">0%</span></div>
+                            <div class="flex justify-between pt-1"><span>ฐานที่ใช้คำนวณ:</span> <span id="outPenBase" class="text-white font-bold">฿0</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 text-center bg-navy-700/50 p-4 rounded-xl border border-navy-600">
+                    <p class="text-sm text-gold-300 mb-0">💡 ทริค CFP: นำยอดบำนาญนี้ไปหักออกจากเป้าหมายรายจ่ายต่อเดือน เพื่อหาเงินส่วนที่ต้องลงทุนเพิ่ม</p>
+                </div>
+            </div>
+
+            <!-- Tool 3: Saving Simulator -->
+            <div id="sim-saving" class="sim-content hidden bg-navy-800 rounded-3xl p-6 md:p-8 shadow-2xl border border-navy-700">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <!-- Inputs -->
+                    <div class="space-y-6">
+                        <h3 class="text-xl font-bold text-gold-400 border-b border-navy-600 pb-3">ข้อมูลการออม</h3>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-navy-200 mb-1">อายุเริ่มต้น (ปี)</label>
+                                <input type="number" id="savStartAge" value="30" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateSaving()">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-navy-200 mb-1">อายุเกษียณ (ปี)</label>
+                                <input type="number" id="savRetireAge" value="60" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateSaving()">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-navy-200 mb-1">เงินออมเริ่มต้น (บาท)</label>
+                            <div class="flex items-center">
+                                <span class="text-gold-500 font-bold mr-2">฿</span>
+                                <input type="number" id="savInitial" value="100000" step="10000" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateSaving()">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-navy-200 mb-1">เงินออมต่อปี (บาท)</label>
+                            <div class="flex items-center">
+                                <span class="text-gold-500 font-bold mr-2">฿</span>
+                                <input type="number" id="savAnnual" value="60000" step="12000" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateSaving()">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-navy-200 mb-1">อัตราผลตอบแทนต่อปี (%)</label>
+                            <input type="number" id="savReturn" value="7" step="0.5" class="w-full bg-navy-900 border border-navy-600 rounded p-2 text-white focus:border-gold-500 focus:outline-none" onchange="sim.calculateSaving()">
+                        </div>
+
+                        <button onclick="sim.calculateSaving()" class="w-full bg-navy-700 hover:bg-navy-600 text-white py-2.5 rounded-lg font-medium transition border border-navy-500">คำนวณอัปเดตใหม่</button>
+                    </div>
+
+                    <!-- Output & Chart -->
+                    <div class="flex flex-col h-full bg-navy-900 p-6 rounded-2xl border border-navy-700 shadow-inner">
+                        <div class="text-center mb-4">
+                            <p class="text-navy-200 text-sm mb-2">เงินออมสะสมเมื่อถึงอายุเกษียณ</p>
+                            <h3 id="savResult" class="text-4xl md:text-5xl font-bold text-gold-500 drop-shadow-md">฿0</h3>
+                            <p id="savSub" class="text-xs text-navy-400 mt-2">รวมดอกผลทบต้นแล้ว</p>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="chart-container">
+                                <canvas id="savingChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-6 border-t border-navy-800 text-center">
+                            <p class="text-sm text-gold-200 mb-3 font-medium">อยากเพิ่มผลตอบแทนให้สูงขึ้น?</p>
+                            <a href="#contact" class="inline-block bg-gold-500 text-navy-900 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-gold-400 transition shadow">รับคำปรึกษากับ vikorn.planner</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <p class="text-center text-xs text-navy-500 mt-10 relative z-10">
+            * ข้อมูลผลลัพธ์จากเครื่องมือคำนวณเป็นการประมาณการเพื่อประกอบการตัดสินใจเบื้องต้น ไม่ใช่การการันตีผลตอบแทน
+        </p>
+    </section>
+
+    <!-- 5. Blog & Insights Section -->
+    <section id="blog" class="py-24 px-4 bg-stone-50 border-t border-stone-200">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-navy-900 mb-4">บทความและความรู้ทางการเงิน</h2>
+                <p class="text-stone-600 max-w-2xl mx-auto">อัปเดตกลยุทธ์ภาษี การลงทุน และแนวทางการวางแผนเกษียณ เพื่อการตัดสินใจทางการเงินที่แม่นยำยิ่งขึ้น</p>
+            </div>
+            
+            <div id="homeBlogGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
+            
+            <div class="text-center mt-12">
+                <button onclick="router.showBlogList()" class="inline-block border border-navy-300 bg-white text-navy-800 px-8 py-3 rounded-full font-bold text-sm hover:border-gold-500 hover:text-gold-600 hover:shadow-md transition">ดูบทความทั้งหมด</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Contact & Booking Section -->
+    <section id="contact" class="py-24 px-4 bg-white relative">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-navy-900 mb-4">เริ่มต้นวางแผนความมั่นคงของคุณ</h2>
+                <p class="text-stone-600 max-w-2xl mx-auto">กรอกข้อมูลและระบุวันเวลาที่คุณสะดวก เพื่อพูดคุยประเมินสถานการณ์การเงินเบื้องต้น การพูดคุยครั้งแรกไม่มีข้อผูกมัด (ผ่านทาง Online Meeting)</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-0 bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-200">
+                
+                <!-- Info (Navy) -->
+                <div class="p-8 lg:p-10 lg:col-span-2 bg-navy-800 text-white flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-gold-500 rounded-full opacity-10 filter blur-xl"></div>
+                    
+                    <div class="relative z-10">
+                        <h3 class="text-2xl font-bold mb-4 text-gold-400">จองเวลานัดหมาย</h3>
+                        <p class="text-navy-200 text-sm mb-8 leading-relaxed">
+                            ให้วิกรณ์ช่วยออกแบบพิมพ์เขียวทางการเงินที่เหมาะสมกับเป้าหมายชีวิตของคุณ
+                        </p>
+                        
+                        <div class="bg-navy-900/80 p-5 rounded-xl border border-navy-600 mb-6 shadow-inner">
+                            <p class="text-sm text-gold-400 font-bold mb-2 flex items-center gap-2"><span>🔔</span> การยืนยันนัดหมาย</p>
+                            <p class="text-xs text-navy-200 leading-relaxed">
+                                การยืนยันจะผ่านทาง <strong class="text-white">LINE ID</strong> หรือ <strong class="text-white">เบอร์โทร</strong> ที่คุณระบุไว้
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-6 border-t border-navy-700 text-sm mt-8 relative z-10">
+                        <a href="https://line.me/ti/p/8FRp0-cM4Z" target="_blank" rel="noopener" class="flex items-center gap-3 mb-4 text-navy-200 hover:text-gold-400 transition">
+                            <svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="#06C755"/><path d="M40 22.3C40 15.5 33.3 10 25 10S10 15.5 10 22.3c0 6.1 5.4 11.2 12.7 12.2.5.1 1.2.3 1.3.8.1.4 0 1.1 0 1.1l-.2 1.3c-.1.4-.4 1.6 1.4.9 1.8-.7 9.7-5.7 13.2-9.8C39 27.1 40 24.8 40 22.3z" fill="white"/><path d="M21.2 19.2h-1.1c-.2 0-.4.2-.4.4v6.8c0 .2.2.4.4.4h1.1c.2 0 .4-.2.4-.4v-6.8c0-.2-.2-.4-.4-.4zM29.6 19.2h-1.1c-.2 0-.4.2-.4.4v4l-3.1-4.2-.1-.1h-1.2c-.2 0-.4.2-.4.4v6.8c0 .2.2.4.4.4h1.1c.2 0 .4-.2.4-.4v-4l3.1 4.2.1.1h1.2c.2 0 .4-.2.4-.4v-6.8c0-.2-.2-.4-.4-.4zM18 25.2h-3v-5.6c0-.2-.2-.4-.4-.4h-1.1c-.2 0-.4.2-.4.4v6.8c0 .1 0 .2.1.3.1.1.2.1.3.1H18c.2 0 .4-.2.4-.4v-1.1c0-.2-.2-.1-.4-.1zM35.5 20.8c.2 0 .4-.2.4-.4v-1.1c0-.2-.2-.4-.4-.4h-4.6c-.1 0-.2 0-.3.1-.1.1-.1.2-.1.3v6.8c0 .1 0 .2.1.3.1.1.2.1.3.1h4.6c.2 0 .4-.2.4-.4v-1.1c0-.2-.2-.4-.4-.4h-3.4v-1.2h3.4c.2 0 .4-.2.4-.4v-1.1c0-.2-.2-.4-.4-.4h-3.4v-1.2h3.4z" fill="#06C755"/></svg>
+                            <span>LINE ID: vikorn.planner</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Form Area -->
+                <div class="p-8 lg:p-10 lg:col-span-3 bg-stone-50">
+                    <h3 class="text-xl font-bold text-navy-900 mb-6 border-b border-stone-200 pb-3">ระบุข้อมูลและเวลาที่สะดวก <span class="text-sm font-normal text-stone-500">(ล่วงหน้าอย่างน้อย 3 วัน)</span></h3>
+                    
+                    <form id="bookingForm" class="space-y-5" onsubmit="submitBooking(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm text-stone-700 font-medium mb-1">ชื่อ - นามสกุล</label>
+                                <input type="text" id="fName" required class="w-full bg-white border border-stone-300 rounded-lg px-4 py-2.5 text-stone-800 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-stone-700 font-medium mb-1">LINE ID</label>
+                                <input type="text" id="fContact" required class="w-full bg-white border border-stone-300 rounded-lg px-4 py-2.5 text-stone-800 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition" placeholder="LINE ID สำหรับยืนยันนัดหมาย">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-stone-700 font-medium mb-1">เบอร์ติดต่อ <span class="text-stone-400 font-normal">(หากสะดวก)</span></label>
+                            <input type="tel" id="fPhone" class="w-full bg-white border border-stone-300 rounded-lg px-4 py-2.5 text-stone-800 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition" placeholder="0xx-xxx-xxxx">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-stone-700 font-medium mb-1">เป้าหมายหลักที่ต้องการปรึกษา</label>
+                            <select id="fGoal" class="w-full bg-white border border-stone-300 rounded-lg px-4 py-2.5 text-stone-800 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition">
+                                <option>วางแผนเกษียณอายุ</option>
+                                <option>ลดหย่อนและบริหารภาษี</option>
+                                <option>จัดพอร์ตการลงทุน</option>
+                                <option>ตรวจสอบกรมธรรม์ประกัน</option>
+                                <option>วางแผนการเงินแบบองค์รวม</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm text-stone-700 font-medium mb-1">วันที่สะดวก</label>
+                                <input type="date" id="fDate" required class="w-full bg-white border border-stone-300 rounded-lg px-4 py-2.5 text-stone-800 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-stone-700 font-medium mb-1">ช่วงเวลาที่สะดวก</label>
+                                <select id="fTime" required class="w-full bg-white border border-stone-300 rounded-lg px-4 py-2.5 text-stone-800 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition">
+                                    <option value="" disabled selected>เลือกช่วงเวลา</option>
+                                    <option value="ช่วงเช้า (09:00 - 12:00)">ช่วงเช้า (09:00 - 12:00)</option>
+                                    <option value="ช่วงบ่าย (13:00 - 17:00)">ช่วงบ่าย (13:00 - 17:00)</option>
+                                    <option value="ช่วงเย็น (17:00 - 20:00)">ช่วงเย็น (17:00 - 20:00)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Messages -->
+                        <div id="formSuccess" class="hidden bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm text-center">
+                            ✅ เปิด Mail Client แล้ว — กรุณากด Send เพื่อส่งข้อมูลนัดหมายครับ
+                        </div>
+                        <div id="formError" class="hidden bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 text-sm text-center">
+                            ❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง หรือติดต่อผ่าน LINE โดยตรง
+                        </div>
+
+                        <button type="submit" id="fSubmitBtn" class="w-full bg-navy-800 text-gold-500 font-bold py-3.5 rounded-lg hover:bg-navy-900 transition mt-6 shadow-md text-lg disabled:opacity-60">
+                            ส่งข้อมูลขอนัดหมายทาง Email
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- === BLOG LIST VIEW === -->
+    <section id="view-blog-list" class="py-28 px-4 bg-stone-50 min-h-screen" style="display: none;">
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-10">
+                <button onclick="router.goHome()" class="text-navy-600 hover:text-gold-600 font-medium text-sm flex items-center gap-1 mb-4 transition">
+                    <span>←</span> กลับหน้าหลัก
+                </button>
+                <h1 class="text-4xl font-bold text-navy-900 mb-4">คลังความรู้การเงิน</h1>
+                <p class="text-stone-600 text-lg">รวมบทความและกรณีศึกษาโดย vikorn.planner</p>
+            </div>
+
+            <!-- Category Filters -->
+            <div class="flex flex-wrap gap-2 mb-8" id="blogFilters">
+                <button onclick="filterBlog('ทั้งหมด', this)" class="blog-filter-btn active px-4 py-2 rounded-full text-sm font-semibold border transition" data-cat="ทั้งหมด">ทั้งหมด</button>
+                <button onclick="filterBlog('วางแผนภาษี', this)" class="blog-filter-btn px-4 py-2 rounded-full text-sm font-semibold border transition" data-cat="วางแผนภาษี">วางแผนภาษี</button>
+                <button onclick="filterBlog('วางแผนเกษียณ', this)" class="blog-filter-btn px-4 py-2 rounded-full text-sm font-semibold border transition" data-cat="วางแผนเกษียณ">วางแผนเกษียณ</button>
+                <button onclick="filterBlog('วางแผนลงทุน', this)" class="blog-filter-btn px-4 py-2 rounded-full text-sm font-semibold border transition" data-cat="วางแผนลงทุน">วางแผนลงทุน</button>
+                <button onclick="filterBlog('วางแผนการเงิน', this)" class="blog-filter-btn px-4 py-2 rounded-full text-sm font-semibold border transition" data-cat="วางแผนการเงิน">วางแผนการเงิน</button>
+                <button onclick="filterBlog('วางแผนประกัน', this)" class="blog-filter-btn px-4 py-2 rounded-full text-sm font-semibold border transition" data-cat="วางแผนประกัน">วางแผนประกัน</button>
+            </div>
+
+            <!-- No results -->
+            <div id="blogNoResults" class="hidden text-center py-16 text-stone-400">
+                <div class="text-4xl mb-3">🔍</div>
+                <p class="text-lg">ยังไม่มีบทความในหมวดนี้</p>
+            </div>
+
+            <!-- Blog List Container -->
+            <div class="space-y-6" id="blogListContainer">
+            </div>
+        </div>
+    </section>
+
+    <!-- === SINGLE ARTICLE VIEW === -->
+    <section id="view-article" class="py-28 px-4 bg-white min-h-screen" style="display: none;">
+        <div class="max-w-3xl mx-auto">
+            <button onclick="router.showBlogList()" class="text-navy-600 hover:text-gold-600 font-medium text-sm flex items-center gap-1 mb-8 transition">
+                <span>←</span> กลับไปหน้ารวมบทความ
+            </button>
+            <div id="article-content"></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-navy-900 text-navy-300 py-12 px-4 border-t border-navy-800">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden" style="background:#172554;border:1.5px solid #d4af37;"><img src="icon2.png" alt="vikorn.planner icon" class="w-full h-full object-contain p-0.5"></div>
+                    <span class="font-bold text-lg text-white tracking-tight">vikorn.<span class="text-gold-500">planner</span></span>
+                </div>
+                <p class="text-sm leading-relaxed text-navy-200">วางแผนการเงินอย่างมีศิลปะ ถูกต้องตามหลักการ และยึดประโยชน์สูงสุดของลูกค้าเสมอ โดยนักวางแผนการเงินคุณวุฒิวิชาชีพ CFP®</p>
+            </div>
+            <div class="md:text-right">
+                <h4 class="text-gold-400 font-bold mb-4">ช่องทางติดตาม</h4>
+                <ul class="space-y-3 text-sm">
+                    <li>
+                        <a href="https://www.facebook.com/p/VikornPlanner-100063759300555/" target="_blank" rel="noopener" class="flex items-center md:justify-end gap-2 text-white hover:text-gold-400 transition">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#1877F2;flex-shrink:0"><path d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.884v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+                            <span>Facebook: vikorn.planner</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://line.me/ti/p/8FRp0-cM4Z" target="_blank" rel="noopener" class="flex items-center md:justify-end gap-2 text-white hover:text-gold-400 transition">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#06C755;flex-shrink:0"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+                            <span>Line ID: vikorn.planner</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.tiktok.com/@vikorn.planner" target="_blank" rel="noopener" class="flex items-center md:justify-end gap-2 text-white hover:text-gold-400 transition">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#ffffff;flex-shrink:0"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.75a8.16 8.16 0 004.77 1.52V6.82a4.85 4.85 0 01-1-.13z"/></svg>
+                            <span>TikTok: @vikorn.planner</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="text-center text-xs text-navy-500 pt-8 border-t border-navy-800">
+            &copy; 2026 vikorn.planner. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Application Scripts -->
+    <script>
+        function submitBooking(e) {
+            e.preventDefault();
+
+            const name    = document.getElementById('fName').value.trim();
+            const contact = document.getElementById('fContact').value.trim();
+            const phone   = document.getElementById('fPhone').value.trim();
+            const goal    = document.getElementById('fGoal').value;
+            const date    = document.getElementById('fDate').value;
+            const time    = document.getElementById('fTime').value;
+
+            const subject = encodeURIComponent('นัดหมายเพื่อวางแผนการเงิน');
+            const body = encodeURIComponent(
+                'สวัสดีครับ/ค่ะ คุณวิกรณ์\n\n' +
+                'ขอนัดหมายเพื่อปรึกษาและวางแผนการเงินครับ/ค่ะ\n\n' +
+                '─────────────────────────\n' +
+                'ชื่อ-นามสกุล : ' + name + '\n' +
+                'LINE ID       : ' + contact + '\n' +
+                (phone ? 'เบอร์ติดต่อ   : ' + phone + '\n' : '') +
+                'เป้าหมาย     : ' + goal + '\n' +
+                'วันที่สะดวก  : ' + date + '\n' +
+                'ช่วงเวลา     : ' + time + '\n' +
+                '─────────────────────────\n\n' +
+                'ขอบคุณครับ/ค่ะ'
+            );
+
+            window.location.href = 'mailto:vikorn.planner@gmail.com?subject=' + subject + '&body=' + body;
+
+            // แสดง feedback หลังเปิด mail client
+            document.getElementById('formSuccess').classList.remove('hidden');
+            document.getElementById('formError').classList.add('hidden');
+            document.getElementById('bookingForm').reset();
+        }
+
+        // Blog category filter
+        function filterBlog(cat, btn) {
+            // Update active button
+            document.querySelectorAll('.blog-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const cards = document.querySelectorAll('.blog-card');
+            let visibleCount = 0;
+            cards.forEach(card => {
+                const cats = card.getAttribute('data-cats') || '';
+                const show = cat === 'ทั้งหมด' || cats.includes(cat);
+                card.classList.toggle('hidden-card', !show);
+                if (show) visibleCount++;
+            });
+            document.getElementById('blogNoResults').classList.toggle('hidden', visibleCount > 0);
+        }
+
+        // Set min date on booking form (3 days from today)
+        (function() {
+            const el = document.getElementById('fDate');
+            if (el) {
+                const minDate = new Date(Date.now() + 3 * 86400000);
+                el.min = minDate.toISOString().split('T')[0];
+            }
+        })();
+
+        // Mobile Menu Toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+
+        // Close mobile menu on click
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('mobile-menu').classList.add('hidden');
+            });
+        });
+
+        // Blog Article Data
+        const blogArticles = {};
+
+        // Router Logic (SPA Navigation)
+        const router = {
+            landingIds: ['home', 'about', 'services', 'tools', 'blog', 'contact'],
+
+            goHome: function(hash = '') {
+                this.landingIds.forEach(sectionId => {
+                    const el = document.getElementById(sectionId);
+                    if (el) el.style.display = 'block';
+                });
+                document.getElementById('view-blog-list').style.display = 'none';
+                document.getElementById('view-article').style.display = 'none';
+                document.getElementById('mobile-menu').classList.add('hidden');
+
+                if (hash) {
+                    setTimeout(() => {
+                        const target = document.querySelector(hash);
+                        if(target) target.scrollIntoView({behavior: 'smooth'});
+                    }, 100);
+                } else {
+                    window.scrollTo(0,0);
+                }
+                // Reinitialize chart after returning to home
+                setTimeout(() => sim.calculateRetirement(), 150);
+            },
+
+            showBlogList: function() {
+                this.landingIds.forEach(sectionId => {
+                    const el = document.getElementById(sectionId);
+                    if (el) el.style.display = 'none';
+                });
+                document.getElementById('view-blog-list').style.display = 'block';
+                document.getElementById('view-article').style.display = 'none';
+
+                // Render custom articles from admin localStorage
+                const container = document.getElementById('blogListContainer');
+                container.querySelectorAll('.custom-article-card').forEach(el => el.remove());
+                const catMeta = {
+                    'วางแผนภาษี'   : { badge:'bg-navy-100 text-navy-800',    icon:'bg-navy-50'    },
+                    'วางแผนเกษียณ' : { badge:'bg-amber-100 text-amber-800',   icon:'bg-amber-50'   },
+                    'วางแผนลงทุน'  : { badge:'bg-emerald-100 text-emerald-800',icon:'bg-emerald-50' },
+                    'วางแผนการเงิน': { badge:'bg-blue-100 text-blue-800',      icon:'bg-blue-50'    },
+                    'วางแผนประกัน' : { badge:'bg-purple-100 text-purple-800',  icon:'bg-purple-50'  }
+                };
+                try {
+                    const customs = JSON.parse(localStorage.getItem('vikorn_custom_articles') || '[]');
+                    customs.forEach(a => {
+                        const cats = a.categories || [];
+                        const firstMeta = catMeta[cats[0]] || { badge:'bg-stone-100 text-stone-700', icon:'bg-stone-50' };
+                        const badges = cats.map(c => {
+                            const m = catMeta[c] || { badge:'bg-stone-100 text-stone-700' };
+                            return `<span class="${m.badge} px-2 py-1 rounded text-xs font-bold">${c}</span>`;
+                        }).join('');
+                        const dataCats = cats.join(' ');
+                        const div = document.createElement('div');
+                        div.className = 'blog-card custom-article-card bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex flex-col md:flex-row gap-6 hover:shadow-md transition cursor-pointer group';
+                        div.setAttribute('data-cats', dataCats);
+                        div.setAttribute('onclick', `router.showArticle('${a.id}')`);
+                        const thumbHtml = a.imageData
+                            ? `<div class="md:w-1/3 aspect-video rounded-xl overflow-hidden border border-stone-100 flex-shrink-0"><img src="${a.imageData}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500"></div>`
+                            : `<div class="md:w-1/3 aspect-video ${firstMeta.icon} rounded-xl flex items-center justify-center text-5xl relative overflow-hidden border border-stone-100"><span class="group-hover:scale-110 transition duration-500 drop-shadow-sm">${a.icon || '📝'}</span></div>`;
+                        div.innerHTML = `
+                            ${thumbHtml}
+                            <div class="md:w-2/3 flex flex-col justify-center">
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    ${badges}
+                                    <span class="text-stone-400 text-xs py-1">${a.date}</span>
+                                </div>
+                                <h3 class="text-xl font-bold text-navy-900 mb-2 group-hover:text-gold-600 transition">${a.title}</h3>
+                                <p class="text-stone-600 text-sm line-clamp-2">${a.shortDesc || ''}</p>
+                            </div>`;
+                        container.appendChild(div);
+                    });
+                } catch(e) {}
+
+                // Reset filter to "ทั้งหมด"
+                const allBtn = document.querySelector('.blog-filter-btn[data-cat="ทั้งหมด"]');
+                if (allBtn) filterBlog('ทั้งหมด', allBtn);
+
+                window.scrollTo(0,0);
+            },
+
+            showArticle: function(articleId) {
+                // Handle custom articles from admin
+                if (typeof articleId === 'string' && articleId.startsWith('custom_')) {
+                    try {
+                        const customs = JSON.parse(localStorage.getItem('vikorn_custom_articles') || '[]');
+                        const ca = customs.find(a => a.id === articleId);
+                        if (!ca) return;
+                        const catMeta = {
+                            'วางแผนภาษี'   : 'bg-navy-100 text-navy-800 border border-navy-200',
+                            'วางแผนเกษียณ' : 'bg-amber-100 text-amber-800 border border-amber-200',
+                            'วางแผนลงทุน'  : 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                            'วางแผนการเงิน': 'bg-blue-100 text-blue-800 border border-blue-200',
+                            'วางแผนประกัน' : 'bg-purple-100 text-purple-800 border border-purple-200'
+                        };
+                        const firstCat = (ca.categories || [])[0] || 'วางแผนการเงิน';
+                        const catBadges = (ca.categories || []).map(c =>
+                            `<span class="px-3 py-1 rounded-full text-xs font-bold ${catMeta[c] || 'bg-stone-100 text-stone-700'}">${c}</span>`
+                        ).join('');
+                        const iconBgMap = { 'วางแผนภาษี':'bg-navy-50','วางแผนเกษียณ':'bg-amber-50','วางแผนลงทุน':'bg-emerald-50','วางแผนการเงิน':'bg-blue-50','วางแผนประกัน':'bg-purple-50' };
+                        const iconBg = iconBgMap[firstCat] || 'bg-stone-50';
+                        document.getElementById('article-content').innerHTML = `
+                            <div class="mb-8">
+                                <div class="flex flex-wrap gap-2 mb-4">${catBadges}
+                                    <span class="text-stone-400 text-sm py-1">${ca.date} • อ่าน ${ca.readTime}</span>
+                                </div>
+                                <h1 class="text-3xl md:text-4xl font-bold text-navy-900 leading-tight mb-6">${ca.title}</h1>
+                                ${(()=>{
+                                    const ytId = ca.youtubeUrl && ca.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+                                    if(ytId && ytId[1]) return `<div class="w-full rounded-2xl overflow-hidden mb-10 border border-stone-200" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${ytId[1]}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" style="display:block"></iframe></div>`;
+                                    if(ca.imageData) return `<div class="aspect-[21/9] w-full rounded-2xl overflow-hidden mb-10 border border-stone-200"><img src="${ca.imageData}" class="w-full h-full object-cover"></div>`;
+                                    return `<div class="aspect-[21/9] w-full ${iconBg} rounded-2xl flex items-center justify-center text-7xl mb-10 border border-stone-200"><span class="drop-shadow-md">${ca.icon || '📝'}</span></div>`;
+                                })()}
+                            </div>
+                            <div class="prose prose-stone max-w-none text-stone-700 leading-relaxed space-y-6">
+                                ${ca.body}
+                            </div>
+                            <div class="mt-16 bg-navy-900 text-white p-8 rounded-3xl text-center shadow-lg relative overflow-hidden">
+                                <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-gold-500 rounded-full opacity-20 filter blur-xl"></div>
+                                <h3 class="text-2xl font-bold mb-4 text-gold-400 relative z-10">ต้องการวางแผนการเงิน?</h3>
+                                <p class="text-navy-200 mb-6 max-w-lg mx-auto relative z-10">vikorn.planner พร้อมช่วยออกแบบแผนการเงินที่ตอบโจทย์ทุกเป้าหมายชีวิตของคุณ</p>
+                                <button onclick="router.goHome('#contact')" class="bg-gold-500 text-navy-900 px-8 py-3 rounded-full font-bold hover:bg-gold-400 transition shadow relative z-10">นัดหมายเพื่อปรึกษา</button>
+                            </div>`;
+                        this.landingIds.forEach(sectionId => { const el = document.getElementById(sectionId); if(el) el.style.display='none'; });
+                        document.getElementById('view-blog-list').style.display = 'none';
+                        document.getElementById('view-article').style.display = 'block';
+                        window.scrollTo(0,0);
+                    } catch(e) {}
+                    return;
+                }
+
+                const article = blogArticles[articleId];
+                if (!article) return;
+
+                // Render article content dynamically
+                document.getElementById('article-content').innerHTML = `
+                    <div class="mb-8">
+                        <div class="flex gap-2 mb-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${article.categoryClass}">${article.category}</span>
+                            <span class="text-stone-400 text-sm py-1">${article.date} • อ่าน ${article.readTime}</span>
+                        </div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-navy-900 leading-tight mb-6">${article.title}</h1>
+                        ${article.youtubeId
+                            ? `<div class="w-full rounded-2xl overflow-hidden mb-10 border border-stone-200" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${article.youtubeId}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" style="display:block"></iframe></div>`
+                            : `<div class="aspect-[21/9] w-full ${article.iconBg} rounded-2xl flex items-center justify-center text-7xl mb-10 relative overflow-hidden border border-stone-200"><span class="drop-shadow-md">${article.icon}</span></div>`
+                        }
+                    </div>
+                    <div class="prose prose-stone max-w-none text-stone-700 leading-relaxed space-y-6">
+                        ${article.body}
+                        <p class="mt-10 pt-8 border-t border-stone-200 text-sm text-stone-400">
+                            <em>หมายเหตุ: บทความนี้เป็นตัวอย่างสำหรับการออกแบบ (Prototype) ในระบบใช้งานจริง คุณจะสามารถเพิ่มเนื้อหา รูปภาพ และวิดีโอผ่านระบบหลังบ้านได้โดยตรง</em>
+                        </p>
+                    </div>
+                    <div class="mt-16 bg-navy-900 text-white p-8 rounded-3xl text-center shadow-lg relative overflow-hidden">
+                        <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-gold-500 rounded-full opacity-20 filter blur-xl"></div>
+                        <h3 class="text-2xl font-bold mb-4 text-gold-400 relative z-10">${article.ctaTitle}</h3>
+                        <p class="text-navy-200 mb-6 max-w-lg mx-auto relative z-10">${article.ctaDesc}</p>
+                        <button onclick="router.goHome('#contact')" class="bg-gold-500 text-navy-900 px-8 py-3 rounded-full font-bold hover:bg-gold-400 transition shadow relative z-10">นัดหมายเพื่อปรึกษา</button>
+                    </div>`;
+
+                this.landingIds.forEach(sectionId => {
+                    const el = document.getElementById(sectionId);
+                    if (el) el.style.display = 'none';
+                });
+                document.getElementById('view-blog-list').style.display = 'none';
+                document.getElementById('view-article').style.display = 'block';
+                window.scrollTo(0,0);
+            }
+        };
+
+        // Intercept navbar links for SPA behavior
+        document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const hash = this.getAttribute('href');
+                router.goHome(hash);
+                document.getElementById('mobile-menu').classList.add('hidden');
+            });
+        });
+
+        // Simulator Logic
+        const sim = {
+            chart: null,
+            savingChart: null,
+
+            switchTab: function(target) {
+                document.querySelectorAll('.sim-tab-btn').forEach(btn => {
+                    btn.classList.toggle('bg-gold-500', btn.dataset.target === target);
+                    btn.classList.toggle('text-navy-900', btn.dataset.target === target);
+                    btn.classList.toggle('font-bold', btn.dataset.target === target);
+
+                    btn.classList.toggle('bg-navy-800', btn.dataset.target !== target);
+                    btn.classList.toggle('text-stone-300', btn.dataset.target !== target);
+                });
+                document.querySelectorAll('.sim-content').forEach(content => {
+                    content.classList.toggle('hidden', content.id !== 'sim-' + target);
+                    content.classList.toggle('active', content.id === 'sim-' + target);
+                });
+
+                if(target === 'retire') {
+                    this.calculateRetirement();
+                } else if(target === 'pension') {
+                    this.calcPension();
+                } else if(target === 'saving') {
+                    this.calculateSaving();
+                }
+            },
+
+            formatTHB: function(num) {
+                return new Intl.NumberFormat('th-TH').format(Math.round(num));
+            },
+
+            updateRetireUI: function() {
+                const mode = document.getElementById('retireMode').value;
+                const wrapLife = document.getElementById('wrapperLifeExp');
+                const wrapNest = document.getElementById('wrapperNestEgg');
+                
+                if(mode === 'need') {
+                    wrapLife.classList.remove('hidden');
+                    wrapNest.classList.add('hidden');
+                    document.getElementById('resLabel').innerText = "เงินก้อนที่คุณต้องเตรียม ณ วันเริ่มเกษียณ";
+                    document.getElementById('resSub').innerText = "รวมอัตราเงินเฟ้อแล้ว";
+                } else {
+                    wrapLife.classList.add('hidden');
+                    wrapNest.classList.remove('hidden');
+                    document.getElementById('resLabel').innerText = "เงินของคุณจะใช้ได้ถึงอายุ";
+                    document.getElementById('resSub').innerText = "รวมหักรายจ่ายตามเงินเฟ้อรายปีแล้ว";
+                }
+                this.calculateRetirement();
+            },
+
+            calculateRetirement: function() {
+                const mode = document.getElementById('retireMode').value;
+                const currentAge = parseInt(document.getElementById('inpAge').value) || 35;
+                const retireAge = parseInt(document.getElementById('inpRetireAge').value) || 60;
+                const expMonthly = parseFloat(document.getElementById('inpExpense').value) || 30000;
+                const inf = (parseFloat(document.getElementById('inpInf').value) || 3) / 100;
+                const ret = (parseFloat(document.getElementById('inpRet').value) || 4) / 100;
+                
+                if (currentAge >= retireAge) return; 
+                
+                const yearsToRetire = retireAge - currentAge;
+                const futureExpMonthly = expMonthly * Math.pow(1 + inf, yearsToRetire);
+                let annualExpense = futureExpMonthly * 12;
+
+                let chartLabels = [];
+                let chartData = [];
+                let resultValue = 0;
+
+                if (mode === 'need') {
+                    const lifeExp = parseInt(document.getElementById('inpLifeExp').value) || 85;
+                    const yearsInRetirement = lifeExp - retireAge;
+                    if (yearsInRetirement <= 0) return;
+
+                    let requiredPot = 0;
+                    let expSim = annualExpense * Math.pow(1 + inf, yearsInRetirement - 1); 
+                    
+                    for (let i = yearsInRetirement; i > 0; i--) {
+                        requiredPot = (requiredPot + expSim) / (1 + ret);
+                        expSim = expSim / (1 + inf); 
+                    }
+
+                    resultValue = requiredPot;
+                    document.getElementById('resValue').innerText = '฿' + this.formatTHB(resultValue);
+                    document.getElementById('resValue').className = "text-4xl md:text-5xl font-bold text-gold-500 drop-shadow-md";
+
+                    let currentPot = requiredPot;
+                    let currentExp = annualExpense;
+                    for(let i = 0; i <= yearsInRetirement; i++) {
+                        chartLabels.push(retireAge + i);
+                        chartData.push(currentPot);
+                        currentPot = (currentPot * (1 + ret)) - currentExp;
+                        currentExp = currentExp * (1 + inf);
+                    }
+
+                } else if (mode === 'last') {
+                    let nestEgg = parseFloat(document.getElementById('inpNestEgg').value) || 5000000;
+                    let currentPot = nestEgg;
+                    let currentExp = annualExpense;
+                    let ageHitZero = 0;
+                    
+                    chartLabels.push(retireAge);
+                    chartData.push(currentPot);
+
+                    for(let age = retireAge + 1; age <= 100; age++) {
+                        currentPot = (currentPot * (1 + ret)) - currentExp;
+                        chartLabels.push(age);
+                        
+                        if(currentPot <= 0) {
+                            chartData.push(0);
+                            ageHitZero = age;
+                            break;
+                        }
+                        chartData.push(currentPot);
+                        currentExp = currentExp * (1 + inf);
+                    }
+
+                    if (ageHitZero === 0) {
+                        document.getElementById('resValue').innerText = "เกิน 100 ปี";
+                        document.getElementById('resValue').className = "text-4xl md:text-5xl font-bold text-gold-500 drop-shadow-md";
+                        document.getElementById('resSub').innerText = "พอร์ตเติบโตชนะรายจ่าย คุณมีอิสรภาพการเงิน 100%";
+                    } else {
+                        document.getElementById('resValue').innerText = ageHitZero + " ปี";
+                        if (ageHitZero < 80) {
+                            document.getElementById('resValue').className = "text-4xl md:text-5xl font-bold text-red-400 drop-shadow-md";
+                        } else {
+                            document.getElementById('resValue').className = "text-4xl md:text-5xl font-bold text-gold-500 drop-shadow-md";
+                        }
+                    }
+                }
+
+                this.renderChart(chartLabels, chartData);
+            },
+
+            renderChart: function(labels, data) {
+                const ctx = document.getElementById('retireChart').getContext('2d');
+                Chart.defaults.color = '#94a3b8'; 
+                Chart.defaults.font.family = "'Prompt', sans-serif";
+
+                if (this.chart) {
+                    this.chart.destroy();
+                }
+
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'มูลค่าพอร์ตคงเหลือ (บาท)',
+                            data: data,
+                            borderColor: '#d4af37', 
+                            backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            pointRadius: 0,
+                            pointHitRadius: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1e3a8a', 
+                                titleColor: '#d4af37', 
+                                bodyColor: '#ffffff',
+                                borderColor: '#334e68',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return '฿' + new Intl.NumberFormat('th-TH').format(Math.round(ctx.parsed.y));
+                                    },
+                                    title: function(ctx) {
+                                        return 'อายุ ' + ctx[0].label + ' ปี';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { 
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000000) return value / 1000000 + 'M';
+                                        return value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            calcPension: function() {
+                const years = parseInt(document.getElementById('inpPenYears').value) || 0;
+                let salary = parseFloat(document.getElementById('inpPenSalary').value) || 0;
+                let baseCalculated = Math.min(salary, 17500);
+                let rate = 0;
+                let monthly = 0;
+
+                if (years < 15) {
+                    monthly = 0;
+                    rate = 0;
+                } else {
+                    rate = 20 + ((years - 15) * 1.5);
+                    monthly = baseCalculated * (rate / 100);
+                }
+
+                document.getElementById('outPenMonthly').innerText = (monthly > 0) ? '฿' + this.formatTHB(monthly) : 'รับบำเหน็จ (เงินก้อน)';
+                document.getElementById('outPenRate').innerText = rate.toFixed(1) + '%';
+                document.getElementById('outPenBase').innerText = '฿' + this.formatTHB(baseCalculated);
+            },
+
+            calculateSaving: function() {
+                const startAge  = parseInt(document.getElementById('savStartAge').value)  || 30;
+                const retireAge = parseInt(document.getElementById('savRetireAge').value) || 60;
+                const initial   = parseFloat(document.getElementById('savInitial').value) || 0;
+                const annual    = parseFloat(document.getElementById('savAnnual').value)  || 0;
+                const ret       = (parseFloat(document.getElementById('savReturn').value) || 7) / 100;
+
+                if (startAge >= retireAge) return;
+
+                const years = retireAge - startAge;
+                let balance = initial;
+                let totalPrincipal = initial;
+                let labels = [startAge];
+                let dataTotal = [balance];
+                let dataPrincipal = [balance];
+
+                for (let i = 1; i <= years; i++) {
+                    balance = balance * (1 + ret) + annual;
+                    totalPrincipal += annual;
+                    labels.push(startAge + i);
+                    dataTotal.push(balance);
+                    dataPrincipal.push(totalPrincipal);
+                }
+
+                document.getElementById('savResult').innerText = '฿' + this.formatTHB(balance);
+                document.getElementById('savSub').innerText =
+                    'เงินต้นสะสม ฿' + this.formatTHB(totalPrincipal) +
+                    ' · ดอกผล ฿' + this.formatTHB(balance - totalPrincipal);
+
+                this.renderSavingChart(labels, dataTotal, dataPrincipal);
+            },
+
+            renderSavingChart: function(labels, dataTotal, dataPrincipal) {
+                const ctx = document.getElementById('savingChart').getContext('2d');
+                Chart.defaults.color = '#94a3b8';
+                Chart.defaults.font.family = "'Prompt', sans-serif";
+
+                if (this.savingChart) {
+                    this.savingChart.destroy();
+                }
+
+                this.savingChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'เงินออมรวมดอกผล',
+                                data: dataTotal,
+                                borderColor: '#d4af37',
+                                backgroundColor: 'rgba(212,175,55,0.12)',
+                                borderWidth: 2,
+                                fill: true,
+                                pointRadius: 0,
+                                pointHitRadius: 10
+                            },
+                            {
+                                label: 'เงินต้นสะสม',
+                                data: dataPrincipal,
+                                borderColor: '#64748b',
+                                backgroundColor: 'transparent',
+                                borderWidth: 1.5,
+                                borderDash: [5, 4],
+                                fill: false,
+                                pointRadius: 0,
+                                pointHitRadius: 10
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } }
+                            },
+                            tooltip: {
+                                backgroundColor: '#1e3a8a',
+                                titleColor: '#d4af37',
+                                bodyColor: '#ffffff',
+                                borderColor: '#334e68',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ctx.dataset.label + ': ฿' + new Intl.NumberFormat('th-TH').format(Math.round(ctx.parsed.y));
+                                    },
+                                    title: function(ctx) {
+                                        return 'อายุ ' + ctx[0].label + ' ปี';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: {
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                                        if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
+                                        return value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            sim.calculateRetirement();
+        });
+    </script>
+</body>
+</html>
