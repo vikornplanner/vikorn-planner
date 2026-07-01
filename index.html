@@ -831,12 +831,13 @@
                             <div class="prose prose-stone max-w-none text-stone-700 leading-relaxed space-y-6">
                                 ${ca.body}
                             </div>
+                            ${(!ca.structured || !ca.structured.sec_cta) ? `
                             <div class="mt-16 bg-navy-900 text-white p-8 rounded-3xl text-center shadow-lg relative overflow-hidden">
                                 <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-gold-500 rounded-full opacity-20 filter blur-xl"></div>
                                 <h3 class="text-2xl font-bold mb-4 text-gold-400 relative z-10">ต้องการวางแผนการเงิน?</h3>
                                 <p class="text-navy-200 mb-6 max-w-lg mx-auto relative z-10">vikorn.planner พร้อมช่วยออกแบบแผนการเงินที่ตอบโจทย์ทุกเป้าหมายชีวิตของคุณ</p>
                                 <button onclick="router.goHome('#contact')" class="bg-gold-500 text-navy-900 px-8 py-3 rounded-full font-bold hover:bg-gold-400 transition shadow relative z-10">นัดหมายเพื่อปรึกษา</button>
-                            </div>`;
+                            </div>` : ''}`;
                         this.landingIds.forEach(sectionId => { const el = document.getElementById(sectionId); if(el) el.style.display='none'; });
                         document.getElementById('view-blog-list').style.display = 'none';
                         document.getElementById('view-article').style.display = 'block';

@@ -53,6 +53,9 @@
         .chip-ประกัน  { background:#ede9fe; color:#5b21b6; }
         .tab-btn { padding:8px 16px; font-size:13px; font-weight:600; border-bottom:3px solid transparent; color:#78716c; cursor:pointer; }
         .tab-btn.active { border-color:#d4af37; color:#b8901c; }
+        .fmt-bar { display:flex; gap:4px; margin-bottom:6px; }
+        .fmt-bar button { background:#f5f5f4; border:1px solid #d6d3d1; border-radius:6px; padding:2px 10px; font-size:13px; cursor:pointer; color:#292524; line-height:1.6; min-width:28px; }
+        .fmt-bar button:hover { background:#172554; color:#fff; border-color:#172554; }
         /* Preview styles */
         .preview-body h2 { font-size:1.4rem; font-weight:700; color:#172554; margin:1.5rem 0 .75rem; }
         .preview-body h3 { font-size:1.1rem; font-weight:700; color:#1e3a8a; margin:1.2rem 0 .5rem; }
@@ -241,6 +244,7 @@
                         <span class="text-xs text-stone-400 ml-1">(เนื้อหาเปิดบทความ)</span>
                     </div>
                     <div class="section-body">
+                        <div class="fmt-bar"><button type="button" onclick="fmt('sIntro','strong')"><b>B</b></button><button type="button" onclick="fmt('sIntro','em')"><i>I</i></button><button type="button" onclick="fmt('sIntro','u')"><u>U</u></button></div>
                         <textarea id="sIntro" rows="4" placeholder="เขียนย่อหน้าเปิดบทความ เพื่อดึงดูดผู้อ่าน...&#10;&#10;รองรับหลายย่อหน้า โดยเว้นบรรทัดว่างระหว่างย่อหน้า"></textarea>
                     </div>
                 </div>
@@ -260,6 +264,7 @@
                         </div>
                         <div>
                             <label class="field-label">เนื้อหา <span class="text-stone-400 font-normal">(แสดงในกล่องสีฟ้า)</span></label>
+                            <div class="fmt-bar"><button type="button" onclick="fmt('sPrincipleContent','strong')"><b>B</b></button><button type="button" onclick="fmt('sPrincipleContent','em')"><i>I</i></button><button type="button" onclick="fmt('sPrincipleContent','u')"><u>U</u></button></div>
                             <textarea id="sPrincipleContent" rows="5" placeholder="เช่น บำนาญ = เงินเดือน x อายุราชการ / 50&#10;&#10;ฐานเงินเดือน: เฉลี่ย 60 เดือนสุดท้าย&#10;เพดานอัตราบำนาญสูงสุดไม่เกิน 70%"></textarea>
                         </div>
                     </div>
@@ -280,6 +285,7 @@
                         </div>
                         <div>
                             <label class="field-label">เนื้อหา <span class="text-stone-400 font-normal">(แสดงในกล่องสีฟ้าอ่อน)</span></label>
+                            <div class="fmt-bar"><button type="button" onclick="fmt('sExampleContent','strong')"><b>B</b></button><button type="button" onclick="fmt('sExampleContent','em')"><i>I</i></button><button type="button" onclick="fmt('sExampleContent','u')"><u>U</u></button></div>
                             <textarea id="sExampleContent" rows="5" placeholder="เช่น เงินเดือนเฉลี่ย: 40,000 บ.&#10;อายุราชการ: 30 ปี&#10;บำนาญ = 40,000 x 30 / 50 = 24,000 บาท/เดือน"></textarea>
                         </div>
                     </div>
@@ -300,6 +306,7 @@
                         </div>
                         <div>
                             <label class="field-label">เนื้อหา <span class="text-stone-400 font-normal">(แสดงในกล่องสีทอง)</span></label>
+                            <div class="fmt-bar"><button type="button" onclick="fmt('sTipContent','strong')"><b>B</b></button><button type="button" onclick="fmt('sTipContent','em')"><i>I</i></button><button type="button" onclick="fmt('sTipContent','u')"><u>U</u></button></div>
                             <textarea id="sTipContent" rows="3" placeholder="เช่น ทริค CFP: นำยอดบำนาญนี้ไปหักออกจากเป้าหมายรายจ่ายต่อเดือน เพื่อหาเงินส่วนที่ต้องลงทุนเพิ่ม"></textarea>
                         </div>
                     </div>
@@ -338,6 +345,7 @@
                         <span class="text-xs text-stone-400 ml-auto">คลิกเพื่อเปิด/ปิด</span>
                     </div>
                     <div class="section-body" id="body-conclusion">
+                        <div class="fmt-bar"><button type="button" onclick="fmt('sConclusionContent','strong')"><b>B</b></button><button type="button" onclick="fmt('sConclusionContent','em')"><i>I</i></button><button type="button" onclick="fmt('sConclusionContent','u')"><u>U</u></button></div>
                         <textarea id="sConclusionContent" rows="4" placeholder="สรุปสาระสำคัญของบทความ พร้อม call-to-action ให้ผู้อ่านนำไปปฏิบัติ..."></textarea>
                     </div>
                 </div>
@@ -352,6 +360,7 @@
                     </div>
                     <div class="section-body hidden" id="body-note">
                         <label class="field-label">ข้อความ <span class="text-stone-400 font-normal">(แสดงตัวเล็ก สีจาง ด้านล่างบทความ)</span></label>
+                        <div class="fmt-bar"><button type="button" onclick="fmt('sNoteContent','strong')"><b>B</b></button><button type="button" onclick="fmt('sNoteContent','em')"><i>I</i></button><button type="button" onclick="fmt('sNoteContent','u')"><u>U</u></button></div>
                         <textarea id="sNoteContent" rows="2" placeholder="เช่น บทความนี้จัดทำเพื่อให้ข้อมูลเบื้องต้นเท่านั้น ไม่ใช่คำแนะนำทางการเงินส่วนบุคคล"></textarea>
                     </div>
                 </div>
@@ -486,6 +495,17 @@
     /* ─── Section toggles ─── */
     const secState = { principle:true, example:true, tip:true, warn:true, conclusion:true, note:false, cta:false };
 
+    function fmt(tid, tag) {
+        const ta = document.getElementById(tid);
+        const s = ta.selectionStart, e = ta.selectionEnd;
+        const sel = ta.value.substring(s, e);
+        if (!sel) { ta.focus(); return; }
+        const r = `<${tag}>${sel}</${tag}>`;
+        ta.value = ta.value.substring(0, s) + r + ta.value.substring(e);
+        ta.setSelectionRange(s, s + r.length);
+        ta.focus();
+    }
+
     function getYoutubeEmbedId(url){
         if(!url) return null;
         const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
@@ -546,15 +566,13 @@
         if(secState.principle){
             const t = document.getElementById('sPrincipleTitle').value.trim();
             const c = document.getElementById('sPrincipleContent').value.trim();
-            if(t) parts.push(`<h2>${t}</h2>`);
-            if(c) parts.push(`<div class="bg-navy-50 border-l-4 border-navy-700 pl-5 py-4 rounded-r-xl my-4"><p style="white-space:pre-line;margin:0">${c}</p></div>`);
+            if(t || c) parts.push(`<div class="bg-navy-50 border-l-4 border-navy-700 pl-5 py-4 rounded-r-xl my-4">${t?`<p class="font-bold text-navy-900" style="margin-bottom:${c?'8px':'0'}">${t}</p>`:''}${c?`<p style="white-space:pre-line;margin:0">${c}</p>`:''}</div>`);
         }
         // Example
         if(secState.example){
             const t = document.getElementById('sExampleTitle').value.trim();
             const c = document.getElementById('sExampleContent').value.trim();
-            if(t) parts.push(`<h3>${t}</h3>`);
-            if(c) parts.push(`<div class="bg-blue-50 border border-blue-200 rounded-xl p-5 my-3"><p style="white-space:pre-line;margin:0;color:#1e3a8a">${c}</p></div>`);
+            if(t || c) parts.push(`<div class="bg-blue-50 border border-blue-200 rounded-xl p-5 my-3">${t?`<p class="font-bold" style="color:#1e3a8a;margin-bottom:${c?'8px':'0'}">${t}</p>`:''}${c?`<p style="white-space:pre-line;margin:0;color:#1e3a8a">${c}</p>`:''}</div>`);
         }
         // Tip
         if(secState.tip){
@@ -571,7 +589,7 @@
                 .map(el=>el.value.trim()).filter(Boolean);
             if(items.length){
                 const lis = items.map((item,i)=>`<li><strong>${i+1}.</strong> ${item}</li>`).join('');
-                parts.push(`<h3>${warnLabel}</h3><div class="bg-red-50 border border-red-200 rounded-xl p-5 my-3"><ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">${lis}</ul></div>`);
+                parts.push(`<div class="bg-red-50 border border-red-200 rounded-xl p-5 my-3"><p class="font-bold text-red-700" style="margin-bottom:10px">⚠️ ${warnLabel}</p><ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">${lis}</ul></div>`);
             }
         }
         // Conclusion
