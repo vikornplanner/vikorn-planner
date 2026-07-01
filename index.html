@@ -735,8 +735,8 @@
                 } else {
                     window.scrollTo(0,0);
                 }
-                // Reinitialize chart after returning to home
-                setTimeout(() => sim.calculateRetirement(), 150);
+                // Reinitialize chart + refresh homepage blog grid
+                setTimeout(() => { sim.calculateRetirement(); renderHomeBlogGrid(); }, 150);
             },
 
             showBlogList: function() {
@@ -1030,13 +1030,9 @@
 
             renderChart: function(labels, data) {
                 const ctx = document.getElementById('retireChart').getContext('2d');
-                Chart.defaults.color = '#94a3b8'; 
+                Chart.defaults.color = '#94a3b8';
                 Chart.defaults.font.family = "'Prompt', sans-serif";
-
-                if (this.chart) {
-                    this.chart.destroy();
-                }
-
+                if (this.chart) { this.chart.destroy(); }
                 this.chart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -1044,7 +1040,7 @@
                         datasets: [{
                             label: 'มูลค่าพอร์ตคงเหลือ (บาท)',
                             data: data,
-                            borderColor: '#d4af37', 
+                            borderColor: '#d4af37',
                             backgroundColor: 'rgba(212, 175, 55, 0.1)',
                             borderWidth: 2,
                             fill: true,
@@ -1058,8 +1054,8 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: '#1e3a8a', 
-                                titleColor: '#d4af37', 
+                                backgroundColor: '#1e3a8a',
+                                titleColor: '#d4af37',
                                 bodyColor: '#ffffff',
                                 borderColor: '#334e68',
                                 borderWidth: 1,
@@ -1075,7 +1071,7 @@
                         },
                         scales: {
                             x: { grid: { color: 'rgba(255,255,255,0.05)' } },
-                            y: { 
+                            y: {
                                 grid: { color: 'rgba(255,255,255,0.05)' },
                                 ticks: {
                                     callback: function(value) {
@@ -1095,7 +1091,6 @@
                 let baseCalculated = Math.min(salary, 17500);
                 let rate = 0;
                 let monthly = 0;
-
                 if (years < 15) {
                     monthly = 0;
                     rate = 0;
@@ -1103,7 +1098,6 @@
                     rate = 20 + ((years - 15) * 1.5);
                     monthly = baseCalculated * (rate / 100);
                 }
-
                 document.getElementById('outPenMonthly').innerText = (monthly > 0) ? '฿' + this.formatTHB(monthly) : 'รับบำเหน็จ (เงินก้อน)';
                 document.getElementById('outPenRate').innerText = rate.toFixed(1) + '%';
                 document.getElementById('outPenBase').innerText = '฿' + this.formatTHB(baseCalculated);
@@ -1115,16 +1109,13 @@
                 const initial   = parseFloat(document.getElementById('savInitial').value) || 0;
                 const annual    = parseFloat(document.getElementById('savAnnual').value)  || 0;
                 const ret       = (parseFloat(document.getElementById('savReturn').value) || 7) / 100;
-
                 if (startAge >= retireAge) return;
-
                 const years = retireAge - startAge;
                 let balance = initial;
                 let totalPrincipal = initial;
                 let labels = [startAge];
                 let dataTotal = [balance];
                 let dataPrincipal = [balance];
-
                 for (let i = 1; i <= years; i++) {
                     balance = balance * (1 + ret) + annual;
                     totalPrincipal += annual;
@@ -1132,12 +1123,10 @@
                     dataTotal.push(balance);
                     dataPrincipal.push(totalPrincipal);
                 }
-
                 document.getElementById('savResult').innerText = '฿' + this.formatTHB(balance);
                 document.getElementById('savSub').innerText =
                     'เงินต้นสะสม ฿' + this.formatTHB(totalPrincipal) +
                     ' · ดอกผล ฿' + this.formatTHB(balance - totalPrincipal);
-
                 this.renderSavingChart(labels, dataTotal, dataPrincipal);
             },
 
@@ -1145,11 +1134,7 @@
                 const ctx = document.getElementById('savingChart').getContext('2d');
                 Chart.defaults.color = '#94a3b8';
                 Chart.defaults.font.family = "'Prompt', sans-serif";
-
-                if (this.savingChart) {
-                    this.savingChart.destroy();
-                }
-
+                if (this.savingChart) { this.savingChart.destroy(); }
                 this.savingChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -1221,9 +1206,69 @@
             }
         };
 
+        // Parse Thai date string → timestamp for sorting
+        function parseTHDate(str) {
+            if (!str) return 0;
+            const months = {'ม.ค.':0,'ก.พ.':1,'มี.ค.':2,'เม.ย.':3,'พ.ค.':4,'มิ.ย.':5,'ก.ค.':6,'ส.ค.':7,'ก.ย.':8,'ต.ค.':9,'พ.ย.':10,'ธ.ค.':11};
+            const m = str.match(/(\d{1,2})\s+([฀-๿.]+)\s+(\d{4})/);
+            if (!m) return 0;
+            let year = parseInt(m[3]);
+            if (year > 2400) year -= 543;
+            const mon = months[m[2]];
+            if (mon === undefined) return 0;
+            return new Date(year, mon, parseInt(m[1])).getTime();
+        }
+
+        // Render latest 3 articles on homepage grid sorted by date desc
+        function renderHomeBlogGrid() {
+            const grid = document.getElementById('homeBlogGrid');
+            if (!grid) return;
+            const catMeta = {
+                'วางแผนภาษี'   : { badge:'bg-navy-100 text-navy-800',     icon:'bg-navy-50',    emoji:'💰' },
+                'วางแผนเกษียณ' : { badge:'bg-amber-100 text-amber-800',    icon:'bg-amber-50',   emoji:'🏖️' },
+                'วางแผนลงทุน'  : { badge:'bg-emerald-100 text-emerald-800',icon:'bg-emerald-50', emoji:'📈' },
+                'วางแผนการเงิน': { badge:'bg-blue-100 text-blue-800',       icon:'bg-blue-50',    emoji:'📋' },
+                'วางแผนประกัน' : { badge:'bg-purple-100 text-purple-800',   icon:'bg-purple-50',  emoji:'🛡️' }
+            };
+            try {
+                const customs = JSON.parse(localStorage.getItem('vikorn_custom_articles') || '[]');
+                const sorted = [...customs].sort((a, b) => parseTHDate(b.date) - parseTHDate(a.date));
+                const top3 = sorted.slice(0, 3);
+                grid.innerHTML = '';
+                if (top3.length === 0) return;
+                top3.forEach(a => {
+                    const cats = a.categories || [];
+                    const fm = catMeta[cats[0]] || { badge:'bg-stone-100 text-stone-700', icon:'bg-stone-50', emoji:'📝' };
+                    const badges = cats.map(c => {
+                        const bm = catMeta[c] || { badge:'bg-stone-100 text-stone-700' };
+                        return `<span class="${bm.badge} px-2 py-0.5 rounded text-xs font-bold">${c}</span>`;
+                    }).join('');
+                    const thumbHtml = a.imageData
+                        ? `<img src="${a.imageData}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="">`
+                        : `<div class="w-full h-full ${fm.icon} flex items-center justify-center text-5xl">${a.icon || fm.emoji}</div>`;
+                    const div = document.createElement('div');
+                    div.className = 'blog-card bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden hover:shadow-md transition cursor-pointer group flex flex-col';
+                    div.setAttribute('data-cats', cats.join(' '));
+                    div.onclick = () => router.showArticle(a.id);
+                    div.innerHTML = `
+                        <div class="aspect-video overflow-hidden bg-stone-50 flex-shrink-0">${thumbHtml}</div>
+                        <div class="p-5 flex flex-col flex-grow">
+                            <div class="flex flex-wrap gap-1.5 mb-2">
+                                ${badges}
+                                <span class="text-stone-400 text-xs py-0.5">${a.date}</span>
+                            </div>
+                            <h3 class="text-base font-bold text-navy-900 mb-1.5 group-hover:text-gold-600 transition line-clamp-2 leading-snug">${a.title}</h3>
+                            <p class="text-stone-500 text-sm line-clamp-2 mt-auto">${a.shortDesc || ''}</p>
+                        </div>`;
+                    grid.appendChild(div);
+                });
+            } catch(e) {}
+        }
+
         // Init
         document.addEventListener('DOMContentLoaded', () => {
             sim.calculateRetirement();
+            renderHomeBlogGrid();
         });
     </script>
 </body>
