@@ -787,6 +787,23 @@ ${ctaText?`<p style="color:#c7d7fe;margin-bottom:24px;font-size:.95rem;line-heig
     }
 
     /* ─── Render Dashboard ─── */
+    function showDashboard(){
+        document.getElementById('formView').classList.add('hidden');
+        document.getElementById('dashboardView').classList.remove('hidden');
+        renderDashboard();
+    }
+
+    function switchTab(tab){
+        const isEdit = (tab === 'edit');
+        document.getElementById('tabEditContent').classList.toggle('hidden', !isEdit);
+        document.getElementById('tabPreviewContent').classList.toggle('hidden', isEdit);
+        document.getElementById('tabEditBtn').classList.toggle('active', isEdit);
+        document.getElementById('tabPreviewBtn').classList.toggle('active', !isEdit);
+        if (!isEdit) {
+            document.getElementById('previewContent').innerHTML = buildBody() || '<p class="text-stone-400">ยังไม่มีเนื้อหา</p>';
+        }
+    }
+
     function renderDashboard(){
         const arts=getArticles();
         document.getElementById('statTotal').textContent=arts.length;
