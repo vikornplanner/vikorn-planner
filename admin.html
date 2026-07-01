@@ -196,6 +196,16 @@
                             <input type="text" id="fTitle" placeholder="เช่น 5 วิธีลดหย่อนภาษีสำหรับมนุษย์เงินเดือน">
                         </div>
 
+                        <!-- URL Slug -->
+                        <div style="margin-bottom:16px">
+                            <label class="field-label">URL บทความ <span class="text-red-500">*</span> <span class="text-stone-400 font-normal">(ภาษาอังกฤษ, ขีดกลางแทนเว้นวรรค)</span></label>
+                            <div style="display:flex;align-items:center;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:10px;overflow:hidden">
+                                <span style="padding:9px 12px;background:#f1f5f9;color:#64748b;font-size:13px;font-weight:600;border-right:1.5px solid #e5e7eb;white-space:nowrap">/</span>
+                                <input type="text" id="fSlug" placeholder="วิธีลดหย่อนภาษี-2569" style="border:none;background:transparent;flex:1;padding:9px 12px;font-size:13px;outline:none" oninput="this.value=this.value.replace(/[^a-zA-Z0-9฀-๿\-_]/g,'').toLowerCase()">
+                            </div>
+                            <p style="font-size:11px;color:#94a3b8;margin-top:4px">URL ที่จะใช้แชร์: <span id="slugPreview" style="color:#172554;font-weight:600">/บทความ</span></p>
+                        </div>
+
                         <!-- Categories -->
                         <div style="margin-bottom:16px">
                             <label class="field-label">หมวดหมู่ <span class="text-red-500">*</span> <span class="text-stone-400 font-normal">(เลือกได้หลายอัน)</span></label>
@@ -660,6 +670,8 @@ ${ctaText?`<p style="color:#c7d7fe;margin-bottom:24px;font-size:.95rem;line-heig
         document.getElementById('formTitle').textContent='แก้ไขบทความ';
         document.getElementById('editId').value = a.id||'';
         document.getElementById('fTitle').value     = a.title||'';
+        document.getElementById('fSlug').value      = a.slug||'';
+        document.getElementById('slugPreview').textContent = '/'+(a.slug||'');
         document.getElementById('fDate').value      = a.date||'';
         document.getElementById('fReadTime').value  = a.readTime||'';
         document.getElementById('fShortDesc').value = a.shortDesc||'';
@@ -725,12 +737,14 @@ ${ctaText?`<p style="color:#c7d7fe;margin-bottom:24px;font-size:.95rem;line-heig
         const date =document.getElementById('fDate').value.trim();
         const rt   =document.getElementById('fReadTime').value.trim();
         const sd   =document.getElementById('fShortDesc').value.trim();
-        if(!title||!date||!rt||!sd){ alert('กรุณากรอกข้อมูลพื้นฐานให้ครบ'); return; }
+        const slug =document.getElementById('fSlug').value.trim();
+        if(!title||!date||!rt||!sd||!slug){ alert('กรุณากรอกข้อมูลพื้นฐานให้ครบ (รวม URL บทความ)'); return; }
         if(!cats.length){ alert('กรุณาเลือกอย่างน้อย 1 หมวดหมู่'); return; }
         const warnItems=[...document.querySelectorAll('#warnItems .list-item-row input')].map(el=>el.value.trim()).filter(Boolean);
         const editId=document.getElementById('editId').value;
         const article={
             id        : editId||'custom_'+Date.now(),
+            slug,
             title,categories:cats,date,readTime:rt,shortDesc:sd,
             imageData  : currentImageData,
             youtubeUrl : document.getElementById('sYoutubeUrl').value.trim(),
@@ -810,6 +824,8 @@ ${ctaText?`<p style="color:#c7d7fe;margin-bottom:24px;font-size:.95rem;line-heig
         document.getElementById('formTitle').textContent='เพิ่มบทความใหม่';
         document.getElementById('editId').value='';
         document.getElementById('fTitle').value='';
+        document.getElementById('fSlug').value='';
+        document.getElementById('slugPreview').textContent='/บทความ';
         document.getElementById('fDate').value='';
         document.getElementById('fReadTime').value='';
         document.getElementById('fShortDesc').value='';
@@ -825,52 +841,21 @@ ${ctaText?`<p style="color:#c7d7fe;margin-bottom:24px;font-size:.95rem;line-heig
         document.getElementById('sNoteContent').value='';
         document.getElementById('sCtaTitle').value='';
         document.getElementById('sCtaText').value='';
-        const defRb = document.querySelector('input[name="ctaBtn"][value="contact"]');
-        if(defRb) defRb.checked=true;
         document.querySelectorAll('input[name="cats"]').forEach(el=>el.checked=false);
-        document.querySelectorAll('#warnItems .list-item-row').forEach((el,i)=>{if(i>0)el.remove();else el.querySelector('input').value='';});
+        document.querySelectorAll('#warnItems .list-item-row').forEach((el,i)=>{if(i>0)el.remove(); else el.querySelector('input').value='';});
+        const defRb=document.querySelector('input[name="ctaBtn"][value="contact"]');
+        if(defRb) defRb.checked=true;
         removeImage();
         document.getElementById('sYoutubeUrl').value='';
         updateYoutubePreview();
-        // Reset sections to default state
-        ['principle','example','tip','warn','conclusion'].forEach(k=>{ if(!secState[k]){toggleSection(k);} });
-        if(secState.note) toggleSection('note');
-        if(secState.cta) toggleSection('cta');
+        ['principle','example','tip'].forEach(k=>{ if(!secState[k]) toggleSection(k); });
+        ['warn','note','cta'].forEach(k=>{ if(secState[k]) toggleSection(k); });
+        updateCtaPreview();
         switchTab('edit');
     }
 
-    /* ─── showDashboard ─── */
-    function showDashboard(){
-        document.getElementById('dashboardView').classList.remove('hidden');
-        document.getElementById('formView').classList.add('hidden');
-        renderDashboard();
-    }
-
-    /* ─── Tab ─── */
-    function switchTab(tab){
-        const isEdit=tab==='edit';
-        document.getElementById('tabEditBtn').className    ='tab-btn '+(isEdit?'active':'');
-        document.getElementById('tabPreviewBtn').className ='tab-btn '+(!isEdit?'active':'');
-        document.getElementById('tabEditContent').classList.toggle('hidden',!isEdit);
-        document.getElementById('tabPreviewContent').classList.toggle('hidden',isEdit);
-        if(!isEdit) renderPreview();
-    }
-    function renderPreview(){
-        const title=document.getElementById('fTitle').value||'ชื่อบทความ';
-        const cats=[...document.querySelectorAll('input[name="cats"]:checked')].map(el=>el.value);
-        const chips=cats.map(c=>{const m=CAT_META[c]||{}; return `<span class="chip ${m.chipClass||''}">${c}</span>`;}).join('');
-        const imgHtml=currentImageData
-            ?`<img src="${currentImageData}" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin:16px 0">`
-            :'';
-        document.getElementById('previewContent').innerHTML=
-            `<div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #e7e5e4">
-                <div style="margin-bottom:8px">${chips}</div>
-                <h1 style="font-size:1.5rem;font-weight:700;color:#172554">${title}</h1>
-                <p style="font-size:13px;color:#a8a29e">${document.getElementById('fDate').value||'—'} • อ่าน ${document.getElementById('fReadTime').value||'—'}</p>
-            </div>
-            ${imgHtml}
-            ${buildBody()||'<p style="color:#a8a29e">ยังไม่มีเนื้อหา</p>'}`;
-    }
+    /* ─── Init ─── */
+    renderDashboard();
 </script>
 </body>
 </html>
