@@ -2,7 +2,8 @@
 <html lang="th" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, minimum-scale=0.5, maximum-scale=5.0">
+    <link rel="icon" type="image/png" href="icon2.png">
     <title>vikorn.planner - นักวางแผนการเงิน CFP®</title>
 
     <!-- OG / Social Meta Tags -->
@@ -53,7 +54,12 @@
         .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .gradient-text { background: linear-gradient(to right, #1e3a8a, #334e68); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .gradient-gold { background: linear-gradient(to right, #d4af37, #b8901c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .chart-container { position: relative; width: 100%; height: 300px; max-height: 350px; margin: 0 auto; }
+        .chart-container { position: relative; width: 100%; height: 280px; margin: 0 auto; }
+        @media (max-width: 767px) {
+            .chart-container { height: 200px; }
+            .sim-content { overflow-x: hidden; }
+            #retireMode { font-size: 11px; padding: 4px 6px; max-width: 52vw; }
+        }
         
         /* Custom Inputs */
         input[type="range"] { accent-color: #d4af37; }
@@ -250,9 +256,9 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
                     <!-- Inputs -->
                     <div class="space-y-6">
-                        <div class="flex justify-between items-center border-b border-navy-600 pb-3">
-                            <h3 class="text-xl font-bold text-gold-400">ข้อมูลสำหรับ</h3>
-                            <select id="retireMode" class="bg-navy-900 border border-navy-600 text-sm rounded-lg p-2 text-white outline-none focus:border-gold-500" onchange="sim.updateRetireUI()">
+                        <div class="flex flex-wrap justify-between items-center gap-2 border-b border-navy-600 pb-3">
+                            <h3 class="text-xl font-bold text-gold-400 shrink-0">ข้อมูลสำหรับ</h3>
+                            <select id="retireMode" class="bg-navy-900 border border-navy-600 text-sm rounded-lg p-2 text-white outline-none focus:border-gold-500 min-w-0" onchange="sim.updateRetireUI()">
                                 <option value="need">คำนวณเงินก้อนที่ต้องมี ณ วันเริ่มเกษียณ</option>
                                 <option value="last">เงินที่มี ณ วันเกษียณ จะใช้ได้ถึงอายุกี่ปี?</option>
                             </select>
